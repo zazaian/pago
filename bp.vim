@@ -1,11 +1,46 @@
-" Vim
-" Vim plugin to assist in writing well formatted screenplays
-" Last Change:  2008-10-05
+"
+"
+" Blankpage
+" a screenwriting plugin for vim
+" Version:      0.0.1
+" Updated:  2008-10-05
 " Maintainer:   Mike Zazaian, mike@zop.io, http://zop.io
 " Originator:   Alex Lance, alla at cyber.com.au
 " License:      This file is placed in the public domain.
 "
+" Blankpage allows the use of vim as a fully-functional piece of screenwritng
+" software, automatically formatting the following screenplay elements:
+" 
+" ELEMENT            characters ( beginning#, ending#, total#, align, caps )
+" SCENE HEADING      ( 11, 70, 60, L, yes )
+" ACTION             ( 11, 70, 60, L, no )
+" CHARACTER          ( 31, 70, 40, L, yes )
+" PARANTHETICAL      ( 26, 55, 30, L, no )
+" DIALOGUE           ( 21, 55, 35, L, no )
+" TRANSITION         ( 70, 11, 60, R, yes )
 "
+" This plugin elaborates upon on the screenplay.vim plugin developed by Alex Lance,
+" which supported ACTION lines, CHARACTER names, and DIALOGUE.
+"
+" The following elements are planned for integration, with the following key to
+" mark the level of completion:
+" 'p': PLANNED but not yet completed
+" 'd': DEVELOPED, but not yet tested
+" 't': developed but in the process of TESTING
+" 'i': fully developed, tested, and INTEGRATED
+"
+" p Automatic hilighting and capitalization of SCENE HEADING elements
+" p Handling of PARANTHETICAL elements
+" p Handling of TRANSITION elements
+" p Improved formatting
+" p PRINT FORMATTING, including
+"   p Page numbers
+"   p (CONTINUED) comments
+"   p (Cont'd) elements when dialogue for a single characters spills onto another
+"   page
+"
+"
+" /// OMIT AFTER USING FOR REFERENCE ///
 " The definition of a well formatted screenplay (as I understand it) goes
 " something like:
 "
@@ -64,8 +99,8 @@
 "  * ensure your instance of vim has these options enabled:
 "    :filetype on
 "    :filetype plugin on
-"    :au BufRead,BufNewFile *.screenplay    set filetype=screenplay
-"  * Ensure the suffix the file you are editing is .screenplay and away you
+"    :au BufRead,BufNewFile *.bp    set filetype=blankpage
+"  * Ensure the suffix the file you are editing is .bp and away you
 "    go!
 "
 "
@@ -73,10 +108,10 @@
 
 
 " Avoid loading this twice
-if exists("loaded_screenplay")
+if exists("loaded_blankpage")
   finish
 endif
-let loaded_screenplay = 1
+let loaded_blankpage = 1
 let g:counter = []
 
 " Three listeners: Enter, Tab and Backspace
@@ -242,8 +277,5 @@ function! ScreenplayCompleteCharacterName(findstart, base)
   endif
 endfun
 set completefunc=ScreenplayCompleteCharacterName
-
-
-
 
 
