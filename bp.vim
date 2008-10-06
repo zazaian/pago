@@ -2,8 +2,8 @@
 "
 " Blankpage
 " a screenwriting plugin for vim
-" Version:      0.0.1
-" Updated:  2008-10-05
+" Version:      0.0.5
+" Updated:      2008-10-05
 " Maintainer:   Mike Zazaian, mike@zop.io, http://zop.io
 " Originator:   Alex Lance, alla at cyber.com.au
 " License:      This file is placed in the public domain.
@@ -104,9 +104,6 @@
 "    go!
 "
 "
-"
-
-
 " Avoid loading this twice
 if exists("loaded_blankpage")
   finish
@@ -134,23 +131,84 @@ set autoindent    " Set auto indent
 set noshowmatch   " Turn off display of matching parenthesis if already on
 set ff=unix       " use unix fileformat
 
-
-function! CallScene()
+function! MapUppercase()
+  let g:uppercase = 1
+  imap a A
+  imap b B
+  imap c C
+  imap d D
+  imap e E
+  imap f F
+  imap g G
+  imap h H
+  imap i I
+  imap j J
+  imap k K
+  imap l L
+  imap m M
+  imap n N
+  imap o O
+  imap p P
+  imap q Q
+  imap r R
+  imap s S
+  imap t T
+  imap u U
+  imap v V
+  imap w W
+  imap x X
+  imap y Y
+  imap z Z
 endfunction
 
-function! CallAction()
+function! UnmapUppercase()
+  let g:uppercase = 0
+  imap a a
+  imap b b
+  imap c c
+  imap d d
+  imap e e
+  imap f f
+  imap g g
+  imap h h
+  imap i i
+  imap j j
+  imap k k
+  imap l l
+  imap m m
+  imap n n
+  imap o o
+  imap p p
+  imap q q
+  imap r r
+  imap s s
+  imap t t
+  imap u u
+  imap v v
+  imap w w
+  imap x x
+  imap y y
+  imap z z
 endfunction
 
-function! CallCharacter()
+function! Scene()
+  call MapUppercase()
+  return "gUgU"
 endfunction
 
-function! CallParenthetical()
+function! Action()
 endfunction
 
-function! CallDialogue()
+function! Character()
 endfunction
 
-function! CallTransition()
+function! Parenthetical()
+endfunction
+
+function! Dialogue()
+endfunction
+
+function! Transition()
 endfunction
 
 
@@ -171,9 +229,10 @@ function! ScreenplayEnterPressed()
   if col == 31 && !pumvisible()
     set tw=55
     let rtn = "\<CR>\<Esc>I".repeat(' ', 20)
+    call UnmapUppercase()
 
   " Parenthentical -> Dialogue
-  elseif col == 26 && !pumvisible()
+  elseif col == 26
     set tw=55
     let rtn = "\<CR>\<Esc>I".repeat(' ', 20)
 
@@ -181,6 +240,7 @@ function! ScreenplayEnterPressed()
   elseif col == 21
     set tw=55
     let rtn = "\<CR>\<CR>\<Esc>I".repeat(' ', 30)
+    call MapUppercase()
 
   " Dialog -> Action
   elseif prev_col == 21 && col == 0
@@ -202,19 +262,24 @@ function! ScreenplayTabPressed()
   
   if s:coord < 21
     let s:x = 21 - s:coord
+    call UnmapUppercase()
   elseif s:coord == 21
     set tw=55
     let s:x = 26 - s:coord
     let s:extra = "()\<Left>"
-  elseif s:coord == 27
+    call UnmapUppercase()
+ elseif s:coord == 27
     set tw=55
     let s:x = 32 - s:coord
     let s:pre = "\<Right>\<BS>\<BS>"
+    call MapUppercase()
   elseif s:coord >= 31 && s:coord < 69
     let s:x = 69 - s:coord
+    call MapUppercase()
   elseif s:coord >= 69
     let s:x = 10
     let s:pre = repeat("\<BS>", s:coord)
+    call MapUppercase()
   endif
   
   return s:pre . repeat(' ', s:x) . s:extra
@@ -227,6 +292,7 @@ function! ScreenplayBackspacePressed()
   
   if col == 0
     let s:coord = col(".")
+    let s:action = "\<BS>"
 
     if s:coord > 31
       let s:x = s:coord - 31
@@ -234,14 +300,16 @@ function! ScreenplayBackspacePressed()
       let s:x = s:coord - 26
     elseif s:coord > 21
       let s:x = s:coord - 21
-    elseif s:coord == 11
-      let s:x = s:coord - 0
-    elseif s:coord > 0
-      let s:x = s:coord - 1
+    elseif s:coord > 11
+      let s:x = s:coord - 11
+      call UnmapUppercase()
+    elseif s:coord <= 11
+      let s:x = s:coord
+      let s:action = "\<BS>"
     endif
   endif
 
-  return repeat("\<BS>", s:x)
+  return repeat(s:action, s:x)
 endfunction
 
 
@@ -308,4 +376,4 @@ function! ScreenplayCompleteCharacterName(findstart, base)
 endfun
 set completefunc=ScreenplayCompleteCharacterName
 
-
+call Scene()
