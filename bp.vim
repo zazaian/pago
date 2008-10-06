@@ -25,14 +25,14 @@
 " The following elements are planned for integration, with the following key to
 " mark the level of completion:
 " 'p': PLANNED but not yet completed
-" 'd': DEVELOPED, but not yet tested
+" 'd': in DEVELOPMENT
 " 't': developed but in the process of TESTING
 " 'i': fully developed, tested, and INTEGRATED
 "
 " p Automatic hilighting and capitalization of SCENE HEADING elements
-" p Handling of PARANTHETICAL elements
+" d Handling of PARANTHETICAL elements
 " p Handling of TRANSITION elements
-" p Improved formatting
+" d Improved formatting
 " p PRINT FORMATTING, including
 "   p Page numbers
 "   p (CONTINUED) comments
@@ -127,7 +127,7 @@ map <C-P> i<C-R>=ScreenplayCtrlPPressed()<CR>
 " map ctrl-d to clean up all the whitespace so that ctrl-p work correctly
 "imap <C-D> !A!<Esc>:%s/^[ ]\{1,}$//g<CR>?!A!<CR>df!i
 
-set tw=68         " Set text width to 68
+set tw=70         " Set text width to 70
 set expandtab     " Change tabs into spaces
 set softtabstop=0 " softtabstop variable can break my custom backspacing
 set autoindent    " Set auto indent
@@ -145,22 +145,27 @@ function! ScreenplayEnterPressed()
   let prev_col = get(g:counter,len)
   call add(g:counter, printf("%d",col))
   let rtn = "\<CR>"
-  set tw=68
+  set tw=70
  
   " Name -> Dialog
-  if col == 38 && !pumvisible()
-    set tw=60
-    let rtn = "\<CR>\<Esc>I".repeat(' ', 25)
+  if col == 31 && !pumvisible()
+    set tw=55
+    let rtn = "\<CR>\<Esc>I".repeat(' ', 20)
+
+  " Parenthentical -> Dialogue
+  if col == 26 && !pumvisible()
+    set tw=55
+    let rtn = "\<CR>\<Esc>I".repeat(' ', 20)
 
   " Dialog -> New Name
-  elseif col == 26
-    set tw=60
-    let rtn = "\<CR>\<CR>\<Esc>I".repeat(' ', 37)
+  elseif col == 21
+    set tw=55
+    let rtn = "\<CR>\<CR>\<Esc>I".repeat(' ', 30)
 
   " Dialog -> Action
-  elseif prev_col == 26 && col == 0
-    set tw=68
-    let rtn = "\<Esc>I".repeat("\<BS>", 22)
+  elseif prev_col == 21 && col == 0
+    set tw=70
+    let rtn = "\<Esc>I".repeat("\<BS>", 10)
   endif
 
   "return rtn .prev_col." - ".col
@@ -172,17 +177,18 @@ function! ScreenplayTabPressed()
   let s:x = 4
   let s:extra = ""
   let s:coord = col(".")
-  set tw=68
+  set tw=70
   
-  if s:coord < 16
-    let s:x = 16 - s:coord
+  if s:coord < 21
+    let s:x = 21 - s:coord
   elseif s:coord < 26
-    set tw=60
+    set tw=55
     let s:x = 26 - s:coord
-  elseif s:coord < 38
-    set tw=60
-    let s:x = 38 - s:coord
-  elseif s:coord >= 38
+    let s:extra = "\(\)\<Left>"
+  elseif s:coord < 31
+    set tw=55
+    let s:x = 31 - s:coord
+  elseif s:coord >= 31
     let s:x = 0
     let s:extra = "\<C-X>\<C-U>"
   endif
@@ -198,13 +204,13 @@ function! ScreenplayBackspacePressed()
   if col == 0
     let s:coord = col(".")
 
-    if s:coord > 38
-      let s:x = s:coord - 38
+    if s:coord > 31
+      let s:x = s:coord - 31
     elseif s:coord > 26
       let s:x = s:coord - 26
-    elseif s:coord > 16
-      let s:x = s:coord - 16
-    elseif s:coord == 1
+    elseif s:coord > 21
+      let s:x = s:coord - 21
+    elseif s:coord == 11
       let s:x = s:coord - 0
     elseif s:coord > 0
       let s:x = s:coord - 1
@@ -218,11 +224,11 @@ endfunction
 function! ScreenplayCtrlPPressed()
   let [lnum, col] = searchpos('[^ ].*', 'bnc', line("."))
 
-  if col == 26
-    set tw=60
+  if col == 31
+    set tw=55
     return "\<Esc>gq}i"
-  elseif col == 16
-    set tw=68
+  elseif col == 11
+    set tw=70
     return "\<Esc>gq}i"
   endif
   return "\<Esc>gq}i"
@@ -242,7 +248,7 @@ function! ScreenplayCompleteCharacterName(findstart, base)
   else
     let last_line = str2nr(line("$"))
     let line_num = 1
-    let pattern = "^".repeat(" ",37)."[A-Za-z0-9 ']*$"
+    let pattern = "^".repeat(" ",30)."[A-Za-z0-9 ']*$"
     "let pattern = 'combination'
     let matches = {}
     let names = []
