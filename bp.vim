@@ -99,7 +99,7 @@
 "  * ensure your instance of vim has these options enabled:
 "    :filetype on
 "    :filetype plugin on
-"    :au BufRead,BufNewFile *.bp    set filetype=blankpage
+"    :au BufRead,BufNewFile *.bp    set filetype=bp
 "  * Ensure the suffix the file you are editing is .bp and away you
 "    go!
 "
@@ -131,6 +131,7 @@ set tw=70         " Set text width to 70
 set expandtab     " Change tabs into spaces
 set softtabstop=0 " softtabstop variable can break my custom backspacing
 set autoindent    " Set auto indent
+set noshowmatch   " Turn off display of matching parenthesis if already on
 set ff=unix       " use unix fileformat
 
 
@@ -181,10 +182,10 @@ function! ScreenplayTabPressed()
   
   if s:coord < 21
     let s:x = 21 - s:coord
-  elseif s:coord < 26
+  elseif s:coord == 21
     set tw=55
     let s:x = 26 - s:coord
-    let s:extra = "\(\)\<Left>"
+    let s:extra = "()\<Left>"
   elseif s:coord < 31
     set tw=55
     let s:x = 31 - s:coord
