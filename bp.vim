@@ -135,6 +135,25 @@ set noshowmatch   " Turn off display of matching parenthesis if already on
 set ff=unix       " use unix fileformat
 
 
+function! CallScene()
+endfunction
+
+function! CallAction()
+endfunction
+
+function! CallCharacter()
+endfunction
+
+function! CallParenthetical()
+endfunction
+
+function! CallDialogue()
+endfunction
+
+function! CallTransition()
+endfunction
+
+
 function! ScreenplayEnterPressed()
   let [lnum, col] = searchpos('[^ ].*', 'bnc', line("."))
 
@@ -154,7 +173,7 @@ function! ScreenplayEnterPressed()
     let rtn = "\<CR>\<Esc>I".repeat(' ', 20)
 
   " Parenthentical -> Dialogue
-  if col == 26 && !pumvisible()
+  elseif col == 26 && !pumvisible()
     set tw=55
     let rtn = "\<CR>\<Esc>I".repeat(' ', 20)
 
@@ -176,6 +195,7 @@ endfunction
 
 function! ScreenplayTabPressed()
   let s:x = 4
+  let s:pre = ""
   let s:extra = ""
   let s:coord = col(".")
   set tw=70
@@ -186,15 +206,18 @@ function! ScreenplayTabPressed()
     set tw=55
     let s:x = 26 - s:coord
     let s:extra = "()\<Left>"
-  elseif s:coord < 31
+  elseif s:coord == 27
     set tw=55
-    let s:x = 31 - s:coord
-  elseif s:coord >= 31
-    let s:x = 0
-    let s:extra = "\<C-X>\<C-U>"
+    let s:x = 32 - s:coord
+    let s:pre = "\<Right>\<BS>\<BS>"
+  elseif s:coord >= 31 && s:coord < 69
+    let s:x = 69 - s:coord
+  elseif s:coord >= 69
+    let s:x = 10
+    let s:pre = repeat("\<BS>", s:coord)
   endif
   
-  return repeat(' ', s:x) . s:extra
+  return s:pre . repeat(' ', s:x) . s:extra
 endfunction
 
 
