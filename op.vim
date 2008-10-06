@@ -2,7 +2,7 @@
 "
 " Blankpage
 " a screenwriting plugin for vim
-" Version:      0.0.5
+" Version:      0.0.7
 " Updated:      2008-10-05
 " Maintainer:   Mike Zazaian, mike@zop.io, http://zop.io
 " Originator:   Alex Lance, alla at cyber.com.au
@@ -99,8 +99,8 @@
 "  * ensure your instance of vim has these options enabled:
 "    :filetype on
 "    :filetype plugin on
-"    :au BufRead,BufNewFile *.bp    set filetype=bp
-"  * Ensure the suffix the file you are editing is .bp and away you
+"    :au BufRead,BufNewFile *.op    set filetype=op
+"  * Ensure the suffix the file you are editing is .op and away you
 "    go!
 "
 "
