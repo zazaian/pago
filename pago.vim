@@ -137,8 +137,8 @@ fu! TransitionAdjust()
   return rtn
 endfu
 
-function! MapUppercase(element)
-  if a:element == "transition"
+function! MapUppercase()
+  if g:current == "transition"
     let g:premap = "\<Left>\<BS>\<Right>"
   else
     let g:premap = ""
@@ -171,7 +171,7 @@ function! MapUppercase(element)
   imap z <C-R>=g:premap<CR>Z
 endfunction
 
-function! UnmapUppercase()
+function! UnmapUppercase(element)
   imap a a
   imap b b
   imap c c
@@ -200,37 +200,125 @@ function! UnmapUppercase()
   imap z z
 endfunction
 
-function! ToggleCase(new_case, element)
+function! ToggleCase(new_case)
   if a:new_case == "upper"
-    call MapUppercase(a:element)
+    call MapUppercase()
+    return "gUgU"
   elseif a:new_case == "lower"
-    call UnmapUppercase(a:element)
+    call UnmapUppercase()
+    return "gugu"
   endif
 endfunction
 
 function! Scene()
   let g:current = "scene"
-  let g:begins = 11
-  let g:ends = 70
+  let s:begins = 11
+  let s:ends = 70
+  set tw=s:ends
   set cursorline
-  let g:case = "upper"
-  call ToggleCase(g:case, g:current)
-"  return rtn
+  let s:case = "upper"
+  call ToggleCase(s:case)
+" return rtn
 endfunction
 
-function! Action()
+function! Action(key_pressed)
+  let g:current = "action"
+  let s:begins = 11
+  let s:ends = 70
+  set tw = s:ends
+  set nocursorline
+  let s:x_coord = col(".")
+  let s:case = "lower"
+  call ToggleCase(s:case)
+  
+  if a:key_pressed == "tab"
+    let s:x_change = s:begins - 1
+    let s:prepend = repeat("\<BS>", s:x_coord - 1)
+    let s:middle = repeat(' ', s:x_change)
+    let s:append = ""
+  endif
+
+  return s:prepend . s:middle . s:append
+
 endfunction
 
-function! Character()
+function! Character(key_pressed)
+  let g:current = "character"
+  let s:begins = 31
+  let s:ends = 70
+  set tw = s:ends
+  set nocursorline
+  let s:x_coord = col(".")
+  let s:case = "upper"
+  call ToggleCase(s:case)
+  
+  if a:key_pressed == "tab"
+    let s:x_change = s:begins - s:x_coord
+    let s:prepend = "\<Right>\<BS>\<BS>"
+    let s:middle = repeat(' ', s:x_change)
+    let s:append = ""
+  endif
+
+  return s:prepend . s:middle . s:append
+
 endfunction
 
-function! Parenthetical()
+function! Parenthetical(key_pressed)
+  let g:current = "parenthetical"
+  let s:begins = 26
+  let s:ends = 55
+  set tw = s:ends
+  set nocursorline
+  let s:x_coord = col(".")
+  let s:case = "lower"
+  call ToggleCase(s:case)
+
+  if a:key_pressed == "tab"
+    let s:x_change = s:begins - s:x_coord
+    let s:prepend = ""
+    let s:middle = repeat(' ', s:x_change)
+    let s:append = "()\<Left>"
+  endif
+
+  return s:prepend . s:middle . s:append
 endfunction
 
-function! Dialogue()
+function! Dialogue(key_pressed)
+  let s:x_coord = col(".")
+  let g:current = "dialogue"
+  let s:begins = 21
+  let s:ends = 55
+  set tw = s:ends
+  set nocursorline
+  let s:case = "lower"
+  call ToggleCase(s:case)
+  
+  if a:key_pressed == "tab"
+    s:x_change = s:begins - s:x_coord
+    s:rtn = repeat(' ', s:x_change)
+  endif
+
+  return s:rtn
 endfunction
 
 function! Transition()
+  let g:current = "transition"
+  let s:begins = 70
+  let s:ends = 11
+  set tw = s:ends
+  set nocursorline
+  let s:x_coord = col(".")
+  let s:case = "upper"
+  call ToggleCase(s:case)
+  
+  if a:key_pressed == "tab"
+    let s:x_change = s:begins - s:x_coord
+    let s:prepend = ""
+    let s:middle = repeat(' ', s:x_change)
+    let s:append = ":\<Left>"
+  endif
+
+  return s:prepend . s:middle . s:append
 endfunction
 
 
@@ -255,7 +343,7 @@ function! ScreenplayEnterPressed()
     let g:current = "scene"
     set cursorline
     call MapUppercase()
-    call Scene(g:current,)
+    call Scene()
 
   " Scene Heading -> Next Action Line
  
@@ -288,36 +376,24 @@ endfunction
 
 
 function! ScreenplayTabPressed()
-  let s:x = 4
-  let s:pre = ""
-  let s:extra = ""
-  let s:coord = col(".")
-  set tw=70
+  let s:key = "tab"
   
   if s:coord < 21
-    let s:x = 21 - s:coord
-    call UnmapUppercase()
+    call Dialogue(s:key)
+
   elseif s:coord == 21
-    set tw=55
-    let s:x = 26 - s:coord
-    let s:extra = "()\<Left>"
-    call UnmapUppercase()
- elseif s:coord == 27
-    set tw=55
-    let s:x = 32 - s:coord
-    let s:pre = "\<Right>\<BS>\<BS>"
-    call MapUppercase("dialogue")
+    call Parenthetical(s:key)
+  
+  elseif s:coord == 27 
+    call Character(s:key)
+  
   elseif s:coord >= 31 && s:coord < 70
-    let s:x = 69 - s:coord
-    let s:extra = ":\<Left>"
-    call MapUppercase("transition")
+    call Transition(s:key)
+  
   elseif s:coord >= 70
-    let s:x = 10
-    let s:pre = repeat("\<BS>", s:coord - 1)
-    call MapUppercase("action")
+    call Action(s:key)
   endif
   
-  return s:pre . repeat(' ', s:x) . s:extra
 endfunction
 
 
