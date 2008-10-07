@@ -132,38 +132,46 @@ set autoindent    " Set auto indent
 set noshowmatch   " Turn off display of matching parenthesis if already on
 set ff=unix       " use unix fileformat
 
-function! MapUppercase()
-  let g:uppercase = 1
-  imap a A
-  imap b B
-  imap c C
-  imap d D
-  imap e E
-  imap f F
-  imap g G
-  imap h H
-  imap i I
-  imap j J
-  imap k K
-  imap l L
-  imap m M
-  imap n N
-  imap o O
-  imap p P
-  imap q Q
-  imap r R
-  imap s S
-  imap t T
-  imap u U
-  imap v V
-  imap w W
-  imap x X
-  imap y Y
-  imap z Z
+fu! TransitionAdjust()
+  rtn = repeat("\</Left>\<BS>\<Right>", 1)
+  return rtn
+endfu
+
+function! MapUppercase(element)
+  if a:element == "transition"
+    let g:premap = "\<Left>\<BS>\<Right>"
+  else
+    let g:premap = ""
+  endif
+  imap a <C-R>=g:premap<CR>A
+  imap b <C-R>=g:premap<CR>B
+  imap c <C-R>=g:premap<CR>C
+  imap d <C-R>=g:premap<CR>D
+  imap e <C-R>=g:premap<CR>E
+  imap f <C-R>=g:premap<CR>F
+  imap g <C-R>=g:premap<CR>G
+  imap h <C-R>=g:premap<CR>H
+  imap i <C-R>=g:premap<CR>I
+  imap j <C-R>=g:premap<CR>J
+  imap k <C-R>=g:premap<CR>K
+  imap l <C-R>=g:premap<CR>L
+  imap m <C-R>=g:premap<CR>M
+  imap n <C-R>=g:premap<CR>N
+  imap o <C-R>=g:premap<CR>O
+  imap p <C-R>=g:premap<CR>P
+  imap q <C-R>=g:premap<CR>Q
+  imap r <C-R>=g:premap<CR>R
+  imap s <C-R>=g:premap<CR>S
+  imap t <C-R>=g:premap<CR>T
+  imap u <C-R>=g:premap<CR>U
+  imap v <C-R>=g:premap<CR>V
+  imap w <C-R>=g:premap<CR>W
+  imap x <C-R>=g:premap<CR>X
+  imap y <C-R>=g:premap<CR>Y
+  imap z <C-R>=g:premap<CR>Z
 endfunction
 
 function! UnmapUppercase()
-  let g:uppercase = 0
   imap a a
   imap b b
   imap c c
@@ -192,12 +200,22 @@ function! UnmapUppercase()
   imap z z
 endfunction
 
-function! Scene(action)
-  let s:current = "scene"
-  let s:begins = 11
-  let s:ends = 70
-  call MapUppercase()
-  return "gUgU"
+function! ToggleCase(new_case, element)
+  if a:new_case == "upper"
+    call MapUppercase(a:element)
+  elseif a:new_case == "lower"
+    call UnmapUppercase(a:element)
+  endif
+endfunction
+
+function! Scene()
+  let g:current = "scene"
+  let g:begins = 11
+  let g:ends = 70
+  set cursorline
+  let g:case = "upper"
+  call ToggleCase(g:case, g:current)
+"  return rtn
 endfunction
 
 function! Action()
@@ -231,11 +249,13 @@ function! ScreenplayEnterPressed()
 
   " Action -> Scene Heading
   if col == 11
+
     set tw=70
     let rtn = "\<Esc>gUgU\<CR>"
-    let s:current = "scene"
+    let g:current = "scene"
     set cursorline
     call MapUppercase()
+    call Scene(g:current,)
 
   " Scene Heading -> Next Action Line
  
@@ -254,7 +274,7 @@ function! ScreenplayEnterPressed()
   elseif col == 21
     set tw=55
     let rtn = "\<CR>\<CR>\<Esc>I".repeat(' ', 30)
-    call MapUppercase()
+    call MapUppercase("character")
 
   " Dialog -> Action
   elseif prev_col == 21 && col == 0
@@ -286,14 +306,15 @@ function! ScreenplayTabPressed()
     set tw=55
     let s:x = 32 - s:coord
     let s:pre = "\<Right>\<BS>\<BS>"
-    call MapUppercase()
-  elseif s:coord >= 31 && s:coord < 69
+    call MapUppercase("dialogue")
+  elseif s:coord >= 31 && s:coord < 70
     let s:x = 69 - s:coord
-    call MapUppercase()
-  elseif s:coord >= 69
+    let s:extra = ":\<Left>"
+    call MapUppercase("transition")
+  elseif s:coord >= 70
     let s:x = 10
     let s:pre = repeat("\<BS>", s:coord - 1)
-    call MapUppercase()
+    call MapUppercase("action")
   endif
   
   return s:pre . repeat(' ', s:x) . s:extra
