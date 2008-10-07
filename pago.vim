@@ -133,7 +133,7 @@ set noshowmatch   " Turn off display of matching parenthesis if already on
 set ff=unix       " use unix fileformat
 
 fu! TransitionAdjust()
-  rtn = repeat("\</Left>\<BS>\<Right>", 1)
+  let rtn = repeat("\</Left>\<BS>\<Right>", 1)
   return rtn
 endfu
 
@@ -171,7 +171,7 @@ function! MapUppercase()
   imap z <C-R>=g:premap<CR>Z
 endfunction
 
-function! UnmapUppercase(element)
+function! UnmapUppercase()
   imap a a
   imap b b
   imap c c
@@ -214,7 +214,7 @@ function! Scene()
   let g:current = "scene"
   let s:begins = 11
   let s:ends = 70
-  set tw=s:ends
+  set tw=70
   set cursorline
   let s:case = "upper"
   call ToggleCase(s:case)
@@ -225,7 +225,7 @@ function! Action(key_pressed)
   let g:current = "action"
   let s:begins = 11
   let s:ends = 70
-  set tw = s:ends
+  set tw=70
   set nocursorline
   let s:x_coord = col(".")
   let s:case = "lower"
@@ -233,8 +233,8 @@ function! Action(key_pressed)
   
   if a:key_pressed == "tab"
     let s:x_change = s:begins - 1
-    let s:prepend = repeat("\<BS>", s:x_coord - 1)
-    let s:middle = repeat(' ', s:x_change)
+    let s:prepend = "\<Del>" . repeat("\<BS>", s:x_coord - 1)
+    let s:middle = repeat(' ', s:begins - 1)
     let s:append = ""
   endif
 
@@ -246,7 +246,7 @@ function! Character(key_pressed)
   let g:current = "character"
   let s:begins = 31
   let s:ends = 70
-  set tw = s:ends
+  set tw=70
   set nocursorline
   let s:x_coord = col(".")
   let s:case = "upper"
@@ -254,8 +254,8 @@ function! Character(key_pressed)
   
   if a:key_pressed == "tab"
     let s:x_change = s:begins - s:x_coord
-    let s:prepend = "\<Right>\<BS>\<BS>"
-    let s:middle = repeat(' ', s:x_change)
+    let s:prepend = "\<Left>\<Del>\<Del>"
+    let s:middle = repeat(' ', s:x_change + 1)
     let s:append = ""
   endif
 
@@ -267,7 +267,7 @@ function! Parenthetical(key_pressed)
   let g:current = "parenthetical"
   let s:begins = 26
   let s:ends = 55
-  set tw = s:ends
+  set tw=55
   set nocursorline
   let s:x_coord = col(".")
   let s:case = "lower"
@@ -275,12 +275,11 @@ function! Parenthetical(key_pressed)
 
   if a:key_pressed == "tab"
     let s:x_change = s:begins - s:x_coord
-    let s:prepend = ""
     let s:middle = repeat(' ', s:x_change)
     let s:append = "()\<Left>"
   endif
 
-  return s:prepend . s:middle . s:append
+  return s:middle . s:append
 endfunction
 
 function! Dialogue(key_pressed)
@@ -288,24 +287,24 @@ function! Dialogue(key_pressed)
   let g:current = "dialogue"
   let s:begins = 21
   let s:ends = 55
-  set tw = s:ends
+  set tw=55
   set nocursorline
   let s:case = "lower"
   call ToggleCase(s:case)
   
   if a:key_pressed == "tab"
-    s:x_change = s:begins - s:x_coord
-    s:rtn = repeat(' ', s:x_change)
+    let s:x_change = s:begins - s:x_coord
+    let s:rtn = repeat(' ', s:x_change)
   endif
 
   return s:rtn
 endfunction
 
-function! Transition()
+function! Transition(key_pressed)
   let g:current = "transition"
   let s:begins = 70
   let s:ends = 11
-  set tw = s:ends
+  set tw=70
   set nocursorline
   let s:x_coord = col(".")
   let s:case = "upper"
@@ -362,7 +361,7 @@ function! ScreenplayEnterPressed()
   elseif col == 21
     set tw=55
     let rtn = "\<CR>\<CR>\<Esc>I".repeat(' ', 30)
-    call MapUppercase("character")
+    call MapUppercase()
 
   " Dialog -> Action
   elseif prev_col == 21 && col == 0
@@ -377,33 +376,31 @@ endfunction
 
 function! ScreenplayTabPressed()
   let s:key = "tab"
+  let s:coord = col(".")
   
   if s:coord < 21
-    call Dialogue(s:key)
-
+    let s:rtn = Dialogue(s:key)
   elseif s:coord == 21
-    call Parenthetical(s:key)
-  
+    let s:rtn = Parenthetical(s:key)
   elseif s:coord == 27 
-    call Character(s:key)
-  
+    let s:rtn = Character(s:key)
   elseif s:coord >= 31 && s:coord < 70
-    call Transition(s:key)
-  
+    let s:rtn = Transition(s:key)
   elseif s:coord >= 70
-    call Action(s:key)
+    let s:rtn = Action(s:key)
   endif
-  
+
+  return s:rtn 
 endfunction
 
 
 function! ScreenplayBackspacePressed()
   let [lnum, col] = searchpos('[^ ].*', 'bn', line("."))
   let s:x = 1
+  let s:action = "\<BS>"
   
   if col == 0
     let s:coord = col(".")
-    let s:action = "\<BS>"
 
     if s:coord > 31
       let s:x = s:coord - 31
