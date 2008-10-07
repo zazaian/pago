@@ -2,8 +2,8 @@
 "
 " Pago
 " a screenwriting plugin for vim
-" Version:      0.0.7
-" Updated:      2008-10-05
+" Version:      0.0.11
+" Updated:      2008-10-07
 " Maintainer:   Mike Zazaian, mike@zop.io, http://zop.io
 " Originator:   Alex Lance, alla at cyber.com.au
 " License:      This file is placed in the public domain.
@@ -126,6 +126,7 @@ map <C-P> i<C-R>=ScreenplayCtrlPPressed()<CR>
 "imap <C-D> !A!<Esc>:%s/^[ ]\{1,}$//g<CR>?!A!<CR>df!i
 
 set tw=70         " Set text width to 70
+set wrap          " Set columns to wrap at tw
 set expandtab     " Change tabs into spaces
 set softtabstop=0 " softtabstop variable can break my custom backspacing
 set autoindent    " Set auto indent
@@ -210,26 +211,38 @@ function! ToggleCase(new_case)
   endif
 endfunction
 
+
+fu! ElementHelper(begins, ends, case)
+  
+  if g:current == "scene"
+    set cursorline
+  else
+    set nocursorline
+  endif
+
+  exe "set tw=" . a:ends
+  call ToggleCase(a:case)
+  
+  let s:statustxt = toupper(g:current)
+  set statusline=%f%{s:statustxt}
+
+endfu
+
 function! Scene()
   let g:current = "scene"
   let s:begins = 11
   let s:ends = 70
-  set tw=70
-  set cursorline
   let s:case = "upper"
-  call ToggleCase(s:case)
-" return rtn
+  call ElementHelper(s:begins, s:ends, s:case)
 endfunction
 
 function! Action(key_pressed)
   let g:current = "action"
   let s:begins = 11
   let s:ends = 70
-  set tw=70
-  set nocursorline
   let s:x_coord = col(".")
   let s:case = "lower"
-  call ToggleCase(s:case)
+  call ElementHelper(s:begins, s:ends, s:case)
   
   if a:key_pressed == "tab"
     let s:x_change = s:begins - 1
@@ -239,7 +252,6 @@ function! Action(key_pressed)
   endif
 
   return s:prepend . s:middle . s:append
-
 endfunction
 
 function! Character(key_pressed)
@@ -260,7 +272,6 @@ function! Character(key_pressed)
   endif
 
   return s:prepend . s:middle . s:append
-
 endfunction
 
 function! Parenthetical(key_pressed)
@@ -413,7 +424,6 @@ function! ScreenplayBackspacePressed()
       call UnmapUppercase()
     elseif s:coord <= 11
       let s:x = s:coord
-      let s:action = "\<BS>"
     endif
   endif
 
