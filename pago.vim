@@ -1,6 +1,6 @@
 "
 "
-" Blankpage
+" Pago
 " a screenwriting plugin for vim
 " Version:      0.0.7
 " Updated:      2008-10-05
@@ -33,6 +33,7 @@
 " d Handling of PARANTHETICAL elements
 " p Handling of TRANSITION elements
 " d Improved formatting
+" p Display type of input in status bar
 " p PRINT FORMATTING, including
 "   p Page numbers
 "   p (CONTINUED) comments
@@ -99,16 +100,16 @@
 "  * ensure your instance of vim has these options enabled:
 "    :filetype on
 "    :filetype plugin on
-"    :au BufRead,BufNewFile *.op    set filetype=op
-"  * Ensure the suffix the file you are editing is .op and away you
+"    :au BufRead,BufNewFile *.pago    set filetype=pago
+"  * Ensure the suffix the file you are editing is .pago and away you
 "    go!
 "
 "
 " Avoid loading this twice
-if exists("loaded_blankpage")
+if exists("loaded_pago")
   finish
 endif
-let loaded_blankpage = 1
+let loaded_pago = 1
 let g:counter = []
 
 " Three listeners: Enter, Tab and Backspace
@@ -191,7 +192,10 @@ function! UnmapUppercase()
   imap z z
 endfunction
 
-function! Scene()
+function! Scene(action)
+  let s:current = "scene"
+  let s:begins = 11
+  let s:ends = 70
   call MapUppercase()
   return "gUgU"
 endfunction
@@ -224,9 +228,19 @@ function! ScreenplayEnterPressed()
   call add(g:counter, printf("%d",col))
   let rtn = "\<CR>"
   set tw=70
+
+  " Action -> Scene Heading
+  if col == 11
+    set tw=70
+    let rtn = "\<Esc>gUgU\<CR>"
+    let s:current = "scene"
+    set cursorline
+    call MapUppercase()
+
+  " Scene Heading -> Next Action Line
  
   " Name -> Dialog
-  if col == 31 && !pumvisible()
+  elseif col == 31 && !pumvisible()
     set tw=55
     let rtn = "\<CR>\<Esc>I".repeat(' ', 20)
     call UnmapUppercase()
@@ -278,7 +292,7 @@ function! ScreenplayTabPressed()
     call MapUppercase()
   elseif s:coord >= 69
     let s:x = 10
-    let s:pre = repeat("\<BS>", s:coord)
+    let s:pre = repeat("\<BS>", s:coord - 1)
     call MapUppercase()
   endif
   
