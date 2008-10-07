@@ -2,7 +2,7 @@
 "
 " Pago
 " a screenwriting plugin for vim
-" Version:      0.0.11
+" Version:      0.0.13
 " Updated:      2008-10-07
 " Maintainer:   Mike Zazaian, mike@zop.io, http://zop.io
 " Originator:   Alex Lance, alla at cyber.com.au
@@ -134,42 +134,50 @@ set noshowmatch   " Turn off display of matching parenthesis if already on
 set ff=unix       " use unix fileformat
 
 fu! TransitionAdjust()
-  let rtn = repeat("\</Left>\<BS>\<Right>", 1)
+  if g:current == "transition"
+     let rtn = "\<Esc>:s/^\ //\<CR>A\<Left>\<Left>"
+"    let [lnum, whitespace] = searchpos('[^ ]+', 'bn', line("."))
+"    let s:iterations = 70 - whitespace
+"    let rtn = repeat("\<Left>", s:iterations) . "\<BS>" . repeat("\<Right>", s:iterations)
+  else
+    let rtn = ""
+  endif
   return rtn
 endfu
 
 function! MapUppercase()
   if g:current == "transition"
-    let g:premap = "\<Left>\<BS>\<Right>"
+    let g:premap = "<C-R>=TransitionAdjust()<CR>"
   else
     let g:premap = ""
   endif
-  imap a <C-R>=g:premap<CR>A
-  imap b <C-R>=g:premap<CR>B
-  imap c <C-R>=g:premap<CR>C
-  imap d <C-R>=g:premap<CR>D
-  imap e <C-R>=g:premap<CR>E
-  imap f <C-R>=g:premap<CR>F
-  imap g <C-R>=g:premap<CR>G
-  imap h <C-R>=g:premap<CR>H
-  imap i <C-R>=g:premap<CR>I
-  imap j <C-R>=g:premap<CR>J
-  imap k <C-R>=g:premap<CR>K
-  imap l <C-R>=g:premap<CR>L
-  imap m <C-R>=g:premap<CR>M
-  imap n <C-R>=g:premap<CR>N
-  imap o <C-R>=g:premap<CR>O
-  imap p <C-R>=g:premap<CR>P
-  imap q <C-R>=g:premap<CR>Q
-  imap r <C-R>=g:premap<CR>R
-  imap s <C-R>=g:premap<CR>S
-  imap t <C-R>=g:premap<CR>T
-  imap u <C-R>=g:premap<CR>U
-  imap v <C-R>=g:premap<CR>V
-  imap w <C-R>=g:premap<CR>W
-  imap x <C-R>=g:premap<CR>X
-  imap y <C-R>=g:premap<CR>Y
-  imap z <C-R>=g:premap<CR>Z
+  imap a <C-R>=TransitionAdjust()<CR>A
+  imap b <C-R>=TransitionAdjust()<CR>B
+  imap c <C-R>=TransitionAdjust()<CR>C
+  imap d <C-R>=TransitionAdjust()<CR>D
+  imap e <C-R>=TransitionAdjust()<CR>E
+  imap f <C-R>=TransitionAdjust()<CR>F
+  imap g <C-R>=TransitionAdjust()<CR>G
+  imap h <C-R>=TransitionAdjust()<CR>H
+  imap i <C-R>=TransitionAdjust()<CR>I
+  imap j <C-R>=TransitionAdjust()<CR>J
+  imap k <C-R>=TransitionAdjust()<CR>K
+  imap l <C-R>=TransitionAdjust()<CR>L
+  imap m <C-R>=TransitionAdjust()<CR>M
+  imap n <C-R>=TransitionAdjust()<CR>N
+  imap o <C-R>=TransitionAdjust()<CR>O
+  imap p <C-R>=TransitionAdjust()<CR>P
+  imap q <C-R>=TransitionAdjust()<CR>Q
+  imap r <C-R>=TransitionAdjust()<CR>R
+  imap s <C-R>=TransitionAdjust()<CR>S
+  imap t <C-R>=TransitionAdjust()<CR>T
+  imap u <C-R>=TransitionAdjust()<CR>U
+  imap v <C-R>=TransitionAdjust()<CR>V
+  imap w <C-R>=TransitionAdjust()<CR>W
+  imap x <C-R>=TransitionAdjust()<CR>X
+  imap y <C-R>=TransitionAdjust()<CR>Y
+  imap z <C-R>=TransitionAdjust()<CR>Z
+  imap <Space> <C-R>=TransitionAdjust()<CR><Space>
 endfunction
 
 function! UnmapUppercase()
@@ -223,8 +231,8 @@ fu! ElementHelper(begins, ends, case)
   exe "set tw=" . a:ends
   call ToggleCase(a:case)
   
-  let s:statustxt = toupper(g:current)
-  set statusline=%f%{s:statustxt}
+  let g:statustxt = toupper(g:current)
+  set statusline=%<[%02n]\ %F%(\ %m%h%w%y%r%)\ %{g:statustxt}\ %a%=\ %8l,%c%V/%L\ (%P)\ [%08O:%02B]
 
 endfu
 
@@ -258,11 +266,9 @@ function! Character(key_pressed)
   let g:current = "character"
   let s:begins = 31
   let s:ends = 70
-  set tw=70
-  set nocursorline
   let s:x_coord = col(".")
   let s:case = "upper"
-  call ToggleCase(s:case)
+  call ElementHelper(s:begins, s:ends, s:case)
   
   if a:key_pressed == "tab"
     let s:x_change = s:begins - s:x_coord
@@ -278,11 +284,9 @@ function! Parenthetical(key_pressed)
   let g:current = "parenthetical"
   let s:begins = 26
   let s:ends = 55
-  set tw=55
-  set nocursorline
   let s:x_coord = col(".")
   let s:case = "lower"
-  call ToggleCase(s:case)
+  call ElementHelper(s:begins, s:ends, s:case)
 
   if a:key_pressed == "tab"
     let s:x_change = s:begins - s:x_coord
@@ -298,10 +302,8 @@ function! Dialogue(key_pressed)
   let g:current = "dialogue"
   let s:begins = 21
   let s:ends = 55
-  set tw=55
-  set nocursorline
   let s:case = "lower"
-  call ToggleCase(s:case)
+  call ElementHelper(s:begins, s:ends, s:case)
   
   if a:key_pressed == "tab"
     let s:x_change = s:begins - s:x_coord
@@ -315,11 +317,9 @@ function! Transition(key_pressed)
   let g:current = "transition"
   let s:begins = 70
   let s:ends = 11
-  set tw=70
-  set nocursorline
   let s:x_coord = col(".")
   let s:case = "upper"
-  call ToggleCase(s:case)
+  call ElementHelper(s:begins, s:ends, s:case)
   
   if a:key_pressed == "tab"
     let s:x_change = s:begins - s:x_coord
@@ -348,11 +348,6 @@ function! ScreenplayEnterPressed()
   " Action -> Scene Heading
   if col == 11
 
-    set tw=70
-    let rtn = "\<Esc>gUgU\<CR>"
-    let g:current = "scene"
-    set cursorline
-    call MapUppercase()
     call Scene()
 
   " Scene Heading -> Next Action Line
