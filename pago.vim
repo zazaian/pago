@@ -2,7 +2,7 @@
 "
 " Pago
 " a screenwriting plugin for vim
-" Version:      0.0.15
+" Version:      0.0.17
 " Updated:      2008-10-07
 " Maintainer:   Mike Zazaian, mike@zop.io, http://zop.io
 " Originator:   Alex Lance, alla at cyber.com.au
@@ -146,9 +146,8 @@ endfu
 let g:alphalower = ['a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z']
 let g:alphaupper = []
 for n in g:alphalower
-  N = toupper(n)
-  call add(g:alphaupper, N)
-"  execute "g:alphaupper += ['" . s:N . "']"
+  exe "let N = toupper('" . n . "')"
+  exe "g:alphaupper += ['" . N . "']"
 endfor
 let g:alphaall = g:alphalower + g:alphaupper
 
