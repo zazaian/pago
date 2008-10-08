@@ -2,7 +2,7 @@
 "
 " Pago
 " a screenwriting plugin for vim
-" Version:      0.0.14
+" Version:      0.0.15
 " Updated:      2008-10-07
 " Maintainer:   Mike Zazaian, mike@zop.io, http://zop.io
 " Originator:   Alex Lance, alla at cyber.com.au
@@ -142,121 +142,35 @@ fu! TransitionAdjust()
   return rtn
 endfu
 
+" Dictionary Definitions
+let g:alphalower = ['a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z']
+let g:alphaupper = []
+for n in g:alphalower
+  N = toupper(n)
+  call add(g:alphaupper, N)
+"  execute "g:alphaupper += ['" . s:N . "']"
+endfor
+let g:alphaall = g:alphalower + g:alphaupper
+
 function! MapUppercase()
   if g:current == "transition"
     let g:premap = "<C-R>=TransitionAdjust()<CR>"
   else
     let g:premap = ""
   endif
-  imap a <C-R>=TransitionAdjust()<CR>A
-  imap b <C-R>=TransitionAdjust()<CR>B
-  imap A <C-R>=TransitionAdjust()<CR>A
-  imap B <C-R>=TransitionAdjust()<CR>B
-  imap c <C-R>=TransitionAdjust()<CR>C
-  imap d <C-R>=TransitionAdjust()<CR>D
-  imap C <C-R>=TransitionAdjust()<CR>C
-  imap D <C-R>=TransitionAdjust()<CR>D
-  imap e <C-R>=TransitionAdjust()<CR>E
-  imap f <C-R>=TransitionAdjust()<CR>F
-  imap D <C-R>=TransitionAdjust()<CR>E
-  imap F <C-R>=TransitionAdjust()<CR>F
-  imap g <C-R>=TransitionAdjust()<CR>G
-  imap h <C-R>=TransitionAdjust()<CR>H
-  imap G <C-R>=TransitionAdjust()<CR>G
-  imap H <C-R>=TransitionAdjust()<CR>H
-  imap i <C-R>=TransitionAdjust()<CR>I
-  imap j <C-R>=TransitionAdjust()<CR>J
-  imap I <C-R>=TransitionAdjust()<CR>I
-  imap J <C-R>=TransitionAdjust()<CR>J
-  imap k <C-R>=TransitionAdjust()<CR>K
-  imap l <C-R>=TransitionAdjust()<CR>L
-  imap K <C-R>=TransitionAdjust()<CR>K
-  imap L <C-R>=TransitionAdjust()<CR>L
-  imap m <C-R>=TransitionAdjust()<CR>M
-  imap n <C-R>=TransitionAdjust()<CR>N
-  imap M <C-R>=TransitionAdjust()<CR>M
-  imap N <C-R>=TransitionAdjust()<CR>N
-  imap o <C-R>=TransitionAdjust()<CR>O
-  imap p <C-R>=TransitionAdjust()<CR>P
-  imap O <C-R>=TransitionAdjust()<CR>O
-  imap P <C-R>=TransitionAdjust()<CR>P
-  imap q <C-R>=TransitionAdjust()<CR>Q
-  imap r <C-R>=TransitionAdjust()<CR>R
-  imap Q <C-R>=TransitionAdjust()<CR>Q
-  imap R <C-R>=TransitionAdjust()<CR>R
-  imap s <C-R>=TransitionAdjust()<CR>S
-  imap t <C-R>=TransitionAdjust()<CR>T
-  imap S <C-R>=TransitionAdjust()<CR>S
-  imap T <C-R>=TransitionAdjust()<CR>T
-  imap u <C-R>=TransitionAdjust()<CR>U
-  imap v <C-R>=TransitionAdjust()<CR>V
-  imap U <C-R>=TransitionAdjust()<CR>U
-  imap V <C-R>=TransitionAdjust()<CR>V
-  imap w <C-R>=TransitionAdjust()<CR>W
-  imap x <C-R>=TransitionAdjust()<CR>X
-  imap W <C-R>=TransitionAdjust()<CR>W
-  imap X <C-R>=TransitionAdjust()<CR>X
-  imap y <C-R>=TransitionAdjust()<CR>Y
-  imap z <C-R>=TransitionAdjust()<CR>Z
-  imap Y <C-R>=TransitionAdjust()<CR>Y
-  imap Z <C-R>=TransitionAdjust()<CR>Z
+  
+  for n in g:alphaall
+    execute "imap " . n . " <C-R>=TransitionAdjust()<CR>" . toupper(n)
+  endfor
+
 "  imap <Space> <C-R>=TransitionAdjust()<CR><Space>
 endfunction
 
 function! UnmapUppercase()
-  imap a a
-  imap b b
-  imap c c
-  imap d d
-  imap e e
-  imap f f
-  imap g g
-  imap h h
-  imap i i
-  imap j j
-  imap k k
-  imap l l
-  imap m m
-  imap n n
-  imap o o
-  imap p p
-  imap q q
-  imap r r
-  imap s s
-  imap t t
-  imap u u
-  imap v v
-  imap w w
-  imap x x
-  imap y y
-  imap z z
-  imap A A
-  imap B B
-  imap C C
-  imap D D
-  imap E E
-  imap F F
-  imap G G
-  imap H H
-  imap I I
-  imap J J
-  imap K K
-  imap L L
-  imap M M
-  imap N N
-  imap O O
-  imap P P
-  imap Q Q
-  imap R R
-  imap S S
-  imap T T
-  imap U U
-  imap V V
-  imap W W
-  imap X X
-  imap Y Y
-  imap Z Z
-Endfunction
+  for n in g:alphaall
+    execute "imap " . n . " " . n
+  endfor
+endfunction
 
 function! ToggleCase(new_case)
   if a:new_case == "upper"
