@@ -1,14 +1,13 @@
 "
-"
 " Pago
 " a screenwriting plugin for vim
-" Version:      0.0.17
-" Updated:      2008-10-07
+" Version:      0.0.18
+" Updated:      2008-10-08
 " Maintainer:   Mike Zazaian, mike@zop.io, http://zop.io
 " Originator:   Alex Lance, alla at cyber.com.au
 " License:      This file is placed in the public domain.
 "
-" Blankpage allows the use of vim as a fully-functional piece of screenwritng
+" Pago allows the use of vim as a fully-functional piece of screenwritng
 " software, automatically formatting the following screenplay elements:
 " 
 " ELEMENT            characters ( beginning#, ending#, total#, align, caps )
@@ -135,7 +134,13 @@ set ff=unix       " use unix fileformat
 
 fu! TransitionAdjust()
   if g:current == "transition"
-    let rtn = "\<Esc>:s/^\ //\<CR>:let @/ =\"\"\<CR>A\<Left>\<Left>"
+     let rtn = "\<Esc>:s/^\ //\<CR>:let @/ =\"\"\<CR>A\<Left>"
+"     let [lnum, s:whitespace] = searchpos("[A-Za-z_:]", "bnc" , line("."))
+"     let s:movements = 70 - s:whitespace
+"     let s:taprepend = repeat('\<Left\>', s:movements)
+"     let s:tamiddle = "\<bs>"
+"     let s:taappend = repeat('\<Right\>', s:movements)
+"     let rtn = s:taprepend . s:tamiddle . s:taappend
   else
     let rtn = ""
   endif
@@ -147,11 +152,12 @@ let g:alphalower = ['a','b','c','d','e','f','g','h','i','j','k','l','m','n','o',
 let g:alphaupper = []
 for n in g:alphalower
   exe "let N = toupper('" . n . "')"
-  exe "g:alphaupper += ['" . N . "']"
+  exe "let g:alphaupper += ['" . N . "']"
 endfor
 let g:alphaall = g:alphalower + g:alphaupper
+let g:otherkeys = ['<Space>']
 
-function! MapUppercase()
+fu! MapUppercase()  
   if g:current == "transition"
     let g:premap = "<C-R>=TransitionAdjust()<CR>"
   else
@@ -159,17 +165,19 @@ function! MapUppercase()
   endif
   
   for n in g:alphaall
-    execute "imap " . n . " <C-R>=TransitionAdjust()<CR>" . toupper(n)
+    exe "ino " . n . " " . g:premap . toupper(n)
   endfor
 
-"  imap <Space> <C-R>=TransitionAdjust()<CR><Space>
-endfunction
+  for key in g:otherkeys
+    exe "ino " . key . " " . g:premap . key
+  endfor
+endfu
 
-function! UnmapUppercase()
+fu! UnmapUppercase()
   for n in g:alphaall
-    execute "imap " . n . " " . n
+    execute "ino " . n . " " . n
   endfor
-endfunction
+endfu
 
 function! ToggleCase(new_case)
   if a:new_case == "upper"
@@ -282,7 +290,8 @@ function! Transition(key_pressed)
   let s:x_coord = col(".")
   let s:case = "upper"
   call ElementHelper(s:begins, s:ends, s:case)
-  
+  set tw=1000
+
   if a:key_pressed == "tab"
     let s:x_change = s:begins - s:x_coord
     let s:prepend = ""
