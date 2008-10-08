@@ -135,7 +135,7 @@ set ff=unix       " use unix fileformat
 
 fu! TransitionAdjust()
   if g:current == "transition"
-    let rtn = "\<Esc>:s/^\ //\<CR>A\<Left>\<Left>"
+    let rtn = "\<Esc>:s/^\ //\<CR>:let @/ =\"\"\<CR>A\<Left>\<Left>"
   else
     let rtn = ""
   endif
