@@ -1,7 +1,7 @@
 "
 " Pago
 " a screenwriting plugin for vim
-" Version:      0.0.19
+" Version:      0.0.20
 " Updated:      2008-10-08
 " Maintainer:   Mike Zazaian, mike@zop.io, http://zop.io
 " Originator:   Alex Lance, alla at cyber.com.au
@@ -245,6 +245,14 @@ function! Character(key_pressed)
     let s:prepend = "\<Left>\<Del>\<Del>"
     let s:middle = repeat(' ', s:x_change + 1)
     let s:append = ""
+  elseif a:key_pressed == "backspace"
+    let [s:lnum,s:col] = searchpos("[A-Za-z_]", "nc", line(".")) 
+    if s:col > 0
+      let s:rtn = "\<BS>"
+    else
+      let s:rtn = repeat("\<BS>", 5)
+      call Parenthetical("new")
+    endif
   endif
 
   return s:prepend . s:middle . s:append
@@ -283,7 +291,7 @@ function! Dialogue(key_pressed)
   return s:rtn
 endfunction
 
-function! Transition(key)
+function! Transition(key_pressed)
   let g:current = "transition"
   let s:begins = 70
   let s:ends = 11
@@ -292,16 +300,16 @@ function! Transition(key)
   call ElementHelper(s:begins, s:ends, s:case)
   set tw=1000
 
-  if a:key == "tab"
+  if a:key_pressed == "tab"
     let s:x_change = s:begins - s:x_coord
     let s:rtn = repeat(' ', s:x_change) . ":\<Left>"
-  elseif a:key == "backspace"
-    let [s:lnum,s:col] = searchpos("[A-Za-z_]", "nc", line(".")) 
-    if s:col > 0
+  elseif a:key_pressed == "backspace"
+    let [lnum, linechars] = searchpos('[A-Za-z_]', 'nc', line("."))
+    if linechars > 0
       let s:rtn = "\<BS>\<Esc>:s/^/ /\<CR>:let @/ =\"\"\<CR>A\<Left>"
     else
-      let s:rtn = "\<Del>\<Esc>:exe setpos(line(\".\"), 70)\<CR>i" . repeat("\<BS>", 39)
-      call Dialogue("new")
+      let s:rtn = "\<Del>\<Esc>A" . repeat("\<BS>", 39)
+      call Character("new")
     endif
   endif
                                                                      : 
@@ -378,29 +386,21 @@ endfunction
 
 
 function! ScreenplayBackspacePressed()
-  let [lnum, col] = searchpos('[^ ].*', 'bn', line("."))
-  let s:x = 1
   let s:key = "backspace"
-  let s:action = "\<BS>"
-                                           : 
-  if col == 0
-    let s:coord = col(".")
-
+    
     if g:current == "transition"
       let s:rtn = Transition(s:key)
-    elseif s:coord > 26
-      let s:x = s:coord - 26
-    elseif s:coord > 21
-      let s:x = s:coord - 21
-    elseif s:coord > 11
-      let s:x = s:coord - 11
-      call UnmapUppercase()
-    elseif s:coord <= 11
-      let s:x = s:coord
+    elseif g:current == "character"
+      let s:rtn = Character(s:key)
+    elseif g:current == "parenthetical"
+      let s:rtn = Parenthetical(s:key)
+    elseif g:current == "dialogue"
+      let s:rtn = Dialogue(s:key)
+    elseif g:current == "action"
+      let s:rtn = Action(s:key)
     endif
-  endif
   
-  return s:rtn
+    return s:rtn
 endfunction
 
 
