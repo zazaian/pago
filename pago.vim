@@ -1,7 +1,7 @@
 "
 " Pago
 " a screenwriting plugin for vim
-" Version:      0.0.18
+" Version:      0.0.19
 " Updated:      2008-10-08
 " Maintainer:   Mike Zazaian, mike@zop.io, http://zop.io
 " Originator:   Alex Lance, alla at cyber.com.au
@@ -283,7 +283,7 @@ function! Dialogue(key_pressed)
   return s:rtn
 endfunction
 
-function! Transition(key_pressed)
+function! Transition(key)
   let g:current = "transition"
   let s:begins = 70
   let s:ends = 11
@@ -292,14 +292,20 @@ function! Transition(key_pressed)
   call ElementHelper(s:begins, s:ends, s:case)
   set tw=1000
 
-  if a:key_pressed == "tab"
+  if a:key == "tab"
     let s:x_change = s:begins - s:x_coord
-    let s:prepend = ""
-    let s:middle = repeat(' ', s:x_change)
-    let s:append = ":\<Left>"
+    let s:rtn = repeat(' ', s:x_change) . ":\<Left>"
+  elseif a:key == "backspace"
+    let [s:lnum,s:col] = searchpos("[A-Za-z_]", "nc", line(".")) 
+    if s:col > 0
+      let s:rtn = "\<BS>\<Esc>:s/^/ /\<CR>:let @/ =\"\"\<CR>A\<Left>"
+    else
+      let s:rtn = "\<Del>\<Esc>:exe setpos(line(\".\"), 70)\<CR>i" . repeat("\<BS>", 39)
+      call Dialogue("new")
+    endif
   endif
-
-  return s:prepend . s:middle . s:append
+                                                                     : 
+  return s:rtn
 endfunction
 
 
@@ -374,13 +380,14 @@ endfunction
 function! ScreenplayBackspacePressed()
   let [lnum, col] = searchpos('[^ ].*', 'bn', line("."))
   let s:x = 1
+  let s:key = "backspace"
   let s:action = "\<BS>"
-  
+                                           : 
   if col == 0
     let s:coord = col(".")
 
-    if s:coord > 31
-      let s:x = s:coord - 31
+    if g:current == "transition"
+      let s:rtn = Transition(s:key)
     elseif s:coord > 26
       let s:x = s:coord - 26
     elseif s:coord > 21
@@ -392,8 +399,8 @@ function! ScreenplayBackspacePressed()
       let s:x = s:coord
     endif
   endif
-
-  return repeat(s:action, s:x)
+  
+  return s:rtn
 endfunction
 
 
