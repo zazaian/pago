@@ -1,7 +1,7 @@
 "
 " Pago
 " a screenwriting plugin for vim
-" Version:      0.0.20
+" Version:      0.0.21
 " Updated:      2008-10-08
 " Maintainer:   Mike Zazaian, mike@zop.io, http://zop.io
 " Originator:   Alex Lance, alla at cyber.com.au
@@ -304,15 +304,16 @@ function! Transition(key_pressed)
     let s:x_change = s:begins - s:x_coord
     let s:rtn = repeat(' ', s:x_change) . ":\<Left>"
   elseif a:key_pressed == "backspace"
-    let [lnum, linechars] = searchpos('[A-Za-z_]', 'nc', line("."))
-    if linechars > 0
+    let [lnum, col] = searchpos("[A-Za-z_]", 'bnc', line("."))
+    if col > 0
       let s:rtn = "\<BS>\<Esc>:s/^/ /\<CR>:let @/ =\"\"\<CR>A\<Left>"
+      echo col
     else
       let s:rtn = "\<Del>\<Esc>A" . repeat("\<BS>", 39)
       call Character("new")
     endif
   endif
-                                                                     : 
+
   return s:rtn
 endfunction
 
