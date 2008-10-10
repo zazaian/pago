@@ -1,8 +1,8 @@
 "
 " Pago
 " a screenwriting plugin for vim
-" Version:      0.0.21
-" Updated:      2008-10-08
+" Version:      0.0.22
+" Updated:      2008-10-09
 " Maintainer:   Mike Zazaian, mike@zop.io, http://zop.io
 " Originator:   Alex Lance, alla at cyber.com.au
 " License:      This file is placed in the public domain.
@@ -206,15 +206,15 @@ fu! ElementHelper(begins, ends, case)
 
 endfu
 
-function! Scene()
+fu! Scene()
   let g:current = "scene"
   let s:begins = 11
   let s:ends = 70
   let s:case = "upper"
   call ElementHelper(s:begins, s:ends, s:case)
-endfunction
+endfu
 
-function! Action(key_pressed)
+fu! Action(key_pressed)
   let g:current = "action"
   let s:begins = 11
   let s:ends = 70
@@ -224,58 +224,15 @@ function! Action(key_pressed)
   
   if a:key_pressed == "tab"
     let s:x_change = s:begins - 1
-    let s:prepend = "\<Del>" . repeat("\<BS>", s:x_coord - 1)
-    let s:middle = repeat(' ', s:begins - 1)
-    let s:append = ""
-  endif
-
-  return s:prepend . s:middle . s:append
-endfunction
-
-function! Character(key_pressed)
-  let g:current = "character"
-  let s:begins = 31
-  let s:ends = 70
-  let s:x_coord = col(".")
-  let s:case = "upper"
-  call ElementHelper(s:begins, s:ends, s:case)
-  
-  if a:key_pressed == "tab"
-    let s:x_change = s:begins - s:x_coord
-    let s:prepend = "\<Left>\<Del>\<Del>"
-    let s:middle = repeat(' ', s:x_change + 1)
-    let s:append = ""
+    let s:prepend = "\<Del>" . repeat("\<BS>", s:x_coord - 1) . repeat(' ', s:begins - 1)
   elseif a:key_pressed == "backspace"
-    let [s:lnum,s:col] = searchpos("[A-Za-z_]", "nc", line(".")) 
-    if s:col > 0
-      let s:rtn = "\<BS>"
-    else
-      let s:rtn = repeat("\<BS>", 5)
-      call Parenthetical("new")
-    endif
+    let s:rtn = repeat("\<BS>", s:x_coord) . repeat(' ', s:begins - 1)
   endif
 
-  return s:prepend . s:middle . s:append
-endfunction
+  return s:rtn
+endfu
 
-function! Parenthetical(key_pressed)
-  let g:current = "parenthetical"
-  let s:begins = 26
-  let s:ends = 55
-  let s:x_coord = col(".")
-  let s:case = "lower"
-  call ElementHelper(s:begins, s:ends, s:case)
-
-  if a:key_pressed == "tab"
-    let s:x_change = s:begins - s:x_coord
-    let s:middle = repeat(' ', s:x_change)
-    let s:append = "()\<Left>"
-  endif
-
-  return s:middle . s:append
-endfunction
-
-function! Dialogue(key_pressed)
+fu! Dialogue(key_pressed)
   let s:x_coord = col(".")
   let g:current = "dialogue"
   let s:begins = 21
@@ -286,12 +243,78 @@ function! Dialogue(key_pressed)
   if a:key_pressed == "tab"
     let s:x_change = s:begins - s:x_coord
     let s:rtn = repeat(' ', s:x_change)
+  elseif a:key_pressed == "backspace"
+    let [lnum, col] = searchpos("[A-Za-z_]", "bnc", line(".")) 
+    if col > 0
+      let s:rtn = "\<BS>"
+    else
+      let s:rtn = repeat("\<BS>", 10)
+      call Action("new")
+    endif
   endif
 
   return s:rtn
-endfunction
+endfu
 
-function! Transition(key_pressed)
+fu! Parenthetical(key_pressed)
+  let g:current = "parenthetical"
+  let s:begins = 26
+  let s:ends = 55
+  let s:x_coord = col(".")
+  let s:case = "lower"
+  call ElementHelper(s:begins, s:ends, s:case)
+
+  if a:key_pressed == "tab"
+    let s:x_change = s:begins - s:x_coord
+    let s:rtn = repeat(' ', s:x_change) . "()\<Left>"
+  elseif a:key_pressed == "backspace"
+    let [lnum, col] = searchpos("[A-Za-z_]", "bnc", line(".")) 
+    if col > 0
+      let s:rtn = "\<BS>"
+    else
+      let [lnum, openparen] = searchpos("(", "bnc", line("."))
+      let [lnum, closeparen] = searchpos(")", "bnc", line("."))  
+      let s:backspaces = 5
+      if openparen > 0
+        let s:backspaces += 1
+      endif
+      if closeparen > 0
+        let s:backspaces += 1
+      endif
+
+      let s:rtn = "\<right>" . repeat("\<BS>", s:backspaces)
+      call Dialogue("new")
+    endif
+  endif
+
+  return s:rtn
+endfu
+
+fu! Character(key_pressed)
+  let g:current = "character"
+  let s:begins = 31
+  let s:ends = 70
+  let s:x_coord = col(".")
+  let s:case = "upper"
+  call ElementHelper(s:begins, s:ends, s:case)
+  
+  if a:key_pressed == "tab"
+    let s:x_change = s:begins - s:x_coord
+    let s:rtn = "\<Left>\<Del>\<Del>" . repeat(' ', s:x_change + 1)
+  elseif a:key_pressed == "backspace"
+    let [lnum, col] = searchpos("[A-Za-z_]", "bnc", line(".")) 
+    if col > 0
+      let s:rtn = "\<BS>"
+    else
+      let s:rtn = repeat("\<BS>", 5) . "()\<left>"
+      call Parenthetical("new")
+    endif
+  endif
+
+  return s:rtn
+endfu
+
+fu! Transition(key_pressed)
   let g:current = "transition"
   let s:begins = 70
   let s:ends = 11
@@ -315,7 +338,7 @@ function! Transition(key_pressed)
   endif
 
   return s:rtn
-endfunction
+endfu
 
 
 function! ScreenplayEnterPressed()
