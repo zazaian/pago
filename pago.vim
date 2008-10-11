@@ -1,8 +1,8 @@
 "
 " Pago
 " a screenwriting plugin for vim
-" Version:      0.0.22
-" Updated:      2008-10-09
+" Version:      0.0.23
+" Updated:      2008-10-11
 " Maintainer:   Mike Zazaian, mike@zop.io, http://zop.io
 " Originator:   Alex Lance, alla at cyber.com.au
 " License:      This file is placed in the public domain.
@@ -116,6 +116,8 @@ imap <CR> <C-R>=ScreenplayEnterPressed()<CR>
 imap <TAB> <C-R>=ScreenplayTabPressed()<CR>
 imap <BS> <C-R>=ScreenplayBackspacePressed()<CR>
 imap  <C-R>=ScreenplayBackspacePressed()<CR>
+ino <Up> <C-R>=ElementDetect("up")<CR>
+ino <Down> <C-R>=ElementDetect("down")<CR>
 
 " Reformat paragraph with Ctrl-P in insert and normal mode
 imap <C-P> <C-R>=ScreenplayCtrlPPressed()<CR>
@@ -155,7 +157,10 @@ for n in g:alphalower
   exe "let g:alphaupper += ['" . N . "']"
 endfor
 let g:alphaall = g:alphalower + g:alphaupper
-let g:otherkeys = ['<Space>']
+let g:otherkeys = ['<Space>','!','.','-','?',',']
+
+" Definition of Accepted Screenplay Characters
+let g:screenchars = "[A-Za-z_0-9\?\!\.\-\,]"
 
 fu! MapUppercase()  
   if g:current == "transition"
@@ -206,6 +211,33 @@ fu! ElementHelper(begins, ends, case)
 
 endfu
 
+fu! ElementDetect(direction)
+  " Detect indent of new line
+  let s:indent = indent(line("."))
+  let [lnum, s:colon] = searchpos(":", "enc", line("."))
+  let [lnum, s:chars] = searchpos(g:screenchars , "bnc", line("."))
+  let s:x_coord = col(".")
+
+  if s:colon != 70
+    if s:indent == 10
+      call Action(a:direction)
+    elseif s:indent == 20 
+      call Dialogue(a:direction)
+    elseif s:indent == 25
+      call Parenthetical(a:direction)
+    elseif s:indent == 30
+      call Character(a:direction)
+    endif
+  elseif s:colon == 70
+    call Transition(a:direction)
+  elseif s:chars < 0  
+    return repeat("\<BS>", s:x_coord - 1) . repeat(' ', 10)
+  else
+    call Action(a:direction)
+  endif
+endfu
+
+
 fu! Scene()
   let g:current = "scene"
   let s:begins = 11
@@ -224,9 +256,13 @@ fu! Action(key_pressed)
   
   if a:key_pressed == "tab"
     let s:x_change = s:begins - 1
-    let s:prepend = "\<Del>" . repeat("\<BS>", s:x_coord - 1) . repeat(' ', s:begins - 1)
+    let s:rtn = "\<Del>" . repeat("\<BS>", s:x_coord - 1) . repeat(' ', s:begins - 1)
   elseif a:key_pressed == "backspace"
     let s:rtn = repeat("\<BS>", s:x_coord) . repeat(' ', s:begins - 1)
+  elseif a:key_pressed == "up"
+    let s:rtn = "\<Up>"
+  elseif a:key_pressed == "down"
+    let s:rtn = "\<Down>"
   endif
 
   return s:rtn
@@ -244,13 +280,17 @@ fu! Dialogue(key_pressed)
     let s:x_change = s:begins - s:x_coord
     let s:rtn = repeat(' ', s:x_change)
   elseif a:key_pressed == "backspace"
-    let [lnum, col] = searchpos("[A-Za-z_]", "bnc", line(".")) 
+    let [lnum, col] = searchpos(g:screenchars , "bnc", line(".")) 
     if col > 0
       let s:rtn = "\<BS>"
     else
       let s:rtn = repeat("\<BS>", 10)
       call Action("new")
     endif
+  elseif a:key_pressed == "up"
+    let s:rtn = "\<Up>"
+  elseif a:key_pressed == "down"
+    let s:rtn = "\<Down>"
   endif
 
   return s:rtn
@@ -268,7 +308,7 @@ fu! Parenthetical(key_pressed)
     let s:x_change = s:begins - s:x_coord
     let s:rtn = repeat(' ', s:x_change) . "()\<Left>"
   elseif a:key_pressed == "backspace"
-    let [lnum, col] = searchpos("[A-Za-z_]", "bnc", line(".")) 
+    let [lnum, col] = searchpos(g:screenchars , "bnc", line(".")) 
     if col > 0
       let s:rtn = "\<BS>"
     else
@@ -285,6 +325,10 @@ fu! Parenthetical(key_pressed)
       let s:rtn = "\<right>" . repeat("\<BS>", s:backspaces)
       call Dialogue("new")
     endif
+  elseif a:key_pressed == "up"
+    let s:rtn = "\<Up>"
+  elseif a:key_pressed == "down"
+    let s:rtn = "\<Down>"
   endif
 
   return s:rtn
@@ -302,13 +346,17 @@ fu! Character(key_pressed)
     let s:x_change = s:begins - s:x_coord
     let s:rtn = "\<Left>\<Del>\<Del>" . repeat(' ', s:x_change + 1)
   elseif a:key_pressed == "backspace"
-    let [lnum, col] = searchpos("[A-Za-z_]", "bnc", line(".")) 
+    let [lnum, col] = searchpos(g:screenchars , "bnc", line(".")) 
     if col > 0
       let s:rtn = "\<BS>"
     else
       let s:rtn = repeat("\<BS>", 5) . "()\<left>"
       call Parenthetical("new")
     endif
+  elseif a:key_pressed == "up"
+    let s:rtn = "\<Up>"
+  elseif a:key_pressed == "down"
+    let s:rtn = "\<Down>"
   endif
 
   return s:rtn
@@ -323,11 +371,12 @@ fu! Transition(key_pressed)
   call ElementHelper(s:begins, s:ends, s:case)
   set tw=1000
 
+  let [lnum, col] = searchpos(g:screenchars , 'bnc', line("."))
   if a:key_pressed == "tab"
+"    if col > 0
     let s:x_change = s:begins - s:x_coord
     let s:rtn = repeat(' ', s:x_change) . ":\<Left>"
   elseif a:key_pressed == "backspace"
-    let [lnum, col] = searchpos("[A-Za-z_]", 'bnc', line("."))
     if col > 0
       let s:rtn = "\<BS>\<Esc>:s/^/ /\<CR>:let @/ =\"\"\<CR>A\<Left>"
       echo col
@@ -335,6 +384,10 @@ fu! Transition(key_pressed)
       let s:rtn = "\<Del>\<Esc>A" . repeat("\<BS>", 39)
       call Character("new")
     endif
+  elseif a:key_pressed == "up"
+    let s:rtn = "\<Up>"
+  elseif a:key_pressed == "down"
+    let s:rtn = "\<Down>"
   endif
 
   return s:rtn
