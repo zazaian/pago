@@ -1,7 +1,7 @@
 "
 " Pago
 " a screenwriting plugin for vim
-" Version:      0.0.23
+" Version:      0.0.24
 " Updated:      2008-10-11
 " Maintainer:   Mike Zazaian, mike@zop.io, http://zop.io
 " Originator:   Alex Lance, alla at cyber.com.au
@@ -116,8 +116,8 @@ imap <CR> <C-R>=ScreenplayEnterPressed()<CR>
 imap <TAB> <C-R>=ScreenplayTabPressed()<CR>
 imap <BS> <C-R>=ScreenplayBackspacePressed()<CR>
 imap  <C-R>=ScreenplayBackspacePressed()<CR>
-ino <Up> <C-R>=ElementDetect("up")<CR>
-ino <Down> <C-R>=ElementDetect("down")<CR>
+ino <Up> <Up><C-R>=ElementDetect("up")<CR>
+ino <Down> <Down><C-R>=ElementDetect("down")<CR>
 
 " Reformat paragraph with Ctrl-P in insert and normal mode
 imap <C-P> <C-R>=ScreenplayCtrlPPressed()<CR>
@@ -157,10 +157,10 @@ for n in g:alphalower
   exe "let g:alphaupper += ['" . N . "']"
 endfor
 let g:alphaall = g:alphalower + g:alphaupper
-let g:otherkeys = ['<Space>','!','.','-','?',',']
+let g:otherkeys = ['<Space>','!','.','-','?']
 
 " Definition of Accepted Screenplay Characters
-let g:screenchars = "[A-Za-z_0-9\?\!\.\-\,]"
+let g:screenchars = "[A-Za-z_0-9\?\!\.\-]"
 
 fu! MapUppercase()  
   if g:current == "transition"
@@ -214,7 +214,7 @@ endfu
 fu! ElementDetect(direction)
   " Detect indent of new line
   let s:indent = indent(line("."))
-  let [lnum, s:colon] = searchpos(":", "enc", line("."))
+  let [lnum, s:colon] = searchpos("[:]", "enc", line("."))
   let [lnum, s:chars] = searchpos(g:screenchars , "bnc", line("."))
   let s:x_coord = col(".")
 
@@ -235,6 +235,7 @@ fu! ElementDetect(direction)
   else
     call Action(a:direction)
   endif
+  
 endfu
 
 
@@ -259,10 +260,8 @@ fu! Action(key_pressed)
     let s:rtn = "\<Del>" . repeat("\<BS>", s:x_coord - 1) . repeat(' ', s:begins - 1)
   elseif a:key_pressed == "backspace"
     let s:rtn = repeat("\<BS>", s:x_coord) . repeat(' ', s:begins - 1)
-  elseif a:key_pressed == "up"
-    let s:rtn = "\<Up>"
-  elseif a:key_pressed == "down"
-    let s:rtn = "\<Down>"
+  else
+    let s:rtn = ""
   endif
 
   return s:rtn
@@ -287,10 +286,8 @@ fu! Dialogue(key_pressed)
       let s:rtn = repeat("\<BS>", 10)
       call Action("new")
     endif
-  elseif a:key_pressed == "up"
-    let s:rtn = "\<Up>"
-  elseif a:key_pressed == "down"
-    let s:rtn = "\<Down>"
+  else
+    let s:rtn = ""
   endif
 
   return s:rtn
@@ -325,10 +322,8 @@ fu! Parenthetical(key_pressed)
       let s:rtn = "\<right>" . repeat("\<BS>", s:backspaces)
       call Dialogue("new")
     endif
-  elseif a:key_pressed == "up"
-    let s:rtn = "\<Up>"
-  elseif a:key_pressed == "down"
-    let s:rtn = "\<Down>"
+  else
+    let s:rtn = "x"
   endif
 
   return s:rtn
@@ -353,10 +348,8 @@ fu! Character(key_pressed)
       let s:rtn = repeat("\<BS>", 5) . "()\<left>"
       call Parenthetical("new")
     endif
-  elseif a:key_pressed == "up"
-    let s:rtn = "\<Up>"
-  elseif a:key_pressed == "down"
-    let s:rtn = "\<Down>"
+  else
+    let s:rtn = ""
   endif
 
   return s:rtn
@@ -384,10 +377,8 @@ fu! Transition(key_pressed)
       let s:rtn = "\<Del>\<Esc>A" . repeat("\<BS>", 39)
       call Character("new")
     endif
-  elseif a:key_pressed == "up"
-    let s:rtn = "\<Up>"
-  elseif a:key_pressed == "down"
-    let s:rtn = "\<Down>"
+  else
+    let s:rtn = ""
   endif
 
   return s:rtn
