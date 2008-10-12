@@ -119,9 +119,6 @@ imap  <C-R>=ScreenplayBackspacePressed()<CR>
 ino <Up> <Up><C-R>=ElementDetect("up")<CR>
 ino <Down> <Down><C-R>=ElementDetect("down")<CR>
 no <Insert> <Insert><C-R>=ElementDetect("insert")<CR>
-" no I I<C-R>=ElementDetect("insert")<CR>
-" no a a<C-R>=ElementDetect("insert")<CR>
-" no A A<C-R>=ElementDetect("insert")<CR>
 no <Up> <Insert><Up><C-R>=ElementDetect("up")<CR><Esc>
 no <Down> <Insert><Down><C-R>=ElementDetect("down")<CR><Esc>
 
@@ -255,12 +252,27 @@ fu! ElementDetect(direction)
 endfu
 
 
-fu! Scene()
+fu! Scene(key_pressed)
   let g:current = "scene"
   let s:begins = 11
   let s:ends = 70
   let s:case = "upper"
+  let s:x_coord = col(".")
   call ElementHelper(s:begins, s:ends, s:case)
+  
+  if a:key_pressed == "tab"
+    let s:rtn = "\<Del>" . repeat("\<BS>", s:x_coord - 1) . repeat(' ', s:begins - 1)
+  elseif a:key_pressed == "backspace"
+    let [s:lnum, s:col] = searchpos(g:screenchars, "bnc", line("."))
+    if s:col > 0
+      let s:rtn = "\<BS>"
+    else
+      let s:rtn = repeat("\<BS>", s:x_coord) . repeat(' ', s:begins - 1)
+    endif
+  else
+    let s:rtn = ""
+    call cursor(line("."), s:begins)
+  endif
 endfu
 
 fu! Action(key_pressed)
@@ -272,10 +284,14 @@ fu! Action(key_pressed)
   call ElementHelper(s:begins, s:ends, s:case)
   
   if a:key_pressed == "tab"
-    let s:x_change = s:begins - 1
     let s:rtn = "\<Del>" . repeat("\<BS>", s:x_coord - 1) . repeat(' ', s:begins - 1)
   elseif a:key_pressed == "backspace"
-    let s:rtn = repeat("\<BS>", s:x_coord) . repeat(' ', s:begins - 1)
+    let [s:lnum, s:col] = searchpos(g:screenchars, "bnc", line("."))
+    if s:col > 0
+      let s:rtn = "\<BS>"
+    else
+      let s:rtn = repeat("\<BS>", s:x_coord) . repeat(' ', s:begins - 1)
+    endif
   else
     let s:rtn = ""
     call cursor(line("."), s:begins)
