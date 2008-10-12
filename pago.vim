@@ -1,7 +1,7 @@
 "
 " Pago
 " a screenwriting plugin for vim
-" Version:      0.0.25
+" Version:      0.0.26
 " Updated:      2008-10-12
 " Maintainer:   Mike Zazaian, mike@zop.io, http://zop.io
 " Originator:   Alex Lance, alla at cyber.com.au
@@ -118,12 +118,12 @@ imap <BS> <C-R>=ScreenplayBackspacePressed()<CR>
 imap  <C-R>=ScreenplayBackspacePressed()<CR>
 ino <Up> <Up><C-R>=ElementDetect("up")<CR>
 ino <Down> <Down><C-R>=ElementDetect("down")<CR>
-no i i<C-R>=ElementDetect("insert")<CR>
-no I I<C-R>=ElementDetect("insert")<CR>
-no a a<C-R>=ElementDetect("insert")<CR>
-no A A<C-R>=ElementDetect("insert")<CR>
-no <Up> i<Up><Esc><C-R>=ElementDetect("up")<CR>
-no <Down> i<Down><Esc><C-R>=ElementDetect("down")<CR>
+no <Insert> <Insert><C-R>=ElementDetect("insert")<CR>
+" no I I<C-R>=ElementDetect("insert")<CR>
+" no a a<C-R>=ElementDetect("insert")<CR>
+" no A A<C-R>=ElementDetect("insert")<CR>
+no <Up> <Insert><Up><C-R>=ElementDetect("up")<CR><Esc>
+no <Down> <Insert><Down><C-R>=ElementDetect("down")<CR><Esc>
 
 " Reformat paragraph with Ctrl-P in insert and normal mode
 imap <C-P> <C-R>=ScreenplayCtrlPPressed()<CR>
@@ -219,7 +219,7 @@ fu! ElementHelper(begins, ends, case)
   let g:statustxt = toupper(g:current)
   set statusline=%<[%02n]\ %F%(\ %m%h%w%y%r%)\ %{g:statustxt}\ %a%=\ %8l,%c%V/%L\ (%P)\ [%08O:%02B]
 
-  call cursor(line("."), a:begins)
+"  call cursor(line("."), a:begins)
 
   return ''
 
@@ -278,6 +278,7 @@ fu! Action(key_pressed)
     let s:rtn = repeat("\<BS>", s:x_coord) . repeat(' ', s:begins - 1)
   else
     let s:rtn = ""
+    call cursor(line("."), s:begins)
   endif
 
   return s:rtn
@@ -304,6 +305,7 @@ fu! Dialogue(key_pressed)
     endif
   else
     let s:rtn = ""
+    call cursor(line("."), s:begins)
   endif
 
   return s:rtn
@@ -340,6 +342,7 @@ fu! Parenthetical(key_pressed)
     endif
   else
     let s:rtn = ""
+    call cursor(line("."), s:begins)
   endif
 
   return s:rtn
@@ -366,6 +369,7 @@ fu! Character(key_pressed)
     endif
   else
     let s:rtn = ""
+    call cursor(line("."), s:begins)
   endif
 
   return s:rtn
@@ -395,6 +399,7 @@ fu! Transition(key_pressed)
     endif
   else
     let s:rtn = ""
+    call cursor(line("."), s:begins)
   endif
 
   return s:rtn
