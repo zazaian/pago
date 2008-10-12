@@ -1,8 +1,8 @@
 "
 " Pago
 " a screenwriting plugin for vim
-" Version:      0.0.24
-" Updated:      2008-10-11
+" Version:      0.0.25
+" Updated:      2008-10-12
 " Maintainer:   Mike Zazaian, mike@zop.io, http://zop.io
 " Originator:   Alex Lance, alla at cyber.com.au
 " License:      This file is placed in the public domain.
@@ -118,6 +118,12 @@ imap <BS> <C-R>=ScreenplayBackspacePressed()<CR>
 imap  <C-R>=ScreenplayBackspacePressed()<CR>
 ino <Up> <Up><C-R>=ElementDetect("up")<CR>
 ino <Down> <Down><C-R>=ElementDetect("down")<CR>
+no i i<C-R>=ElementDetect("insert")<CR>
+no I I<C-R>=ElementDetect("insert")<CR>
+no a a<C-R>=ElementDetect("insert")<CR>
+no A A<C-R>=ElementDetect("insert")<CR>
+no <Up> i<Up><Esc><C-R>=ElementDetect("up")<CR>
+no <Down> i<Down><Esc><C-R>=ElementDetect("down")<CR>
 
 " Reformat paragraph with Ctrl-P in insert and normal mode
 imap <C-P> <C-R>=ScreenplayCtrlPPressed()<CR>
@@ -176,12 +182,16 @@ fu! MapUppercase()
   for key in g:otherkeys
     exe "ino " . key . " " . g:premap . key
   endfor
+
+  return ""
 endfu
 
 fu! UnmapUppercase()
   for n in g:alphaall
     execute "ino " . n . " " . n
   endfor
+
+  return ""
 endfu
 
 function! ToggleCase(new_case)
@@ -209,6 +219,10 @@ fu! ElementHelper(begins, ends, case)
   let g:statustxt = toupper(g:current)
   set statusline=%<[%02n]\ %F%(\ %m%h%w%y%r%)\ %{g:statustxt}\ %a%=\ %8l,%c%V/%L\ (%P)\ [%08O:%02B]
 
+  call cursor(line("."), a:begins)
+
+  return ''
+
 endfu
 
 fu! ElementDetect(direction)
@@ -235,6 +249,8 @@ fu! ElementDetect(direction)
   else
     call Action(a:direction)
   endif
+
+  return ''
   
 endfu
 
@@ -323,7 +339,7 @@ fu! Parenthetical(key_pressed)
       call Dialogue("new")
     endif
   else
-    let s:rtn = "x"
+    let s:rtn = ""
   endif
 
   return s:rtn
