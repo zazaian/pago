@@ -1,7 +1,7 @@
 "
 " Pago
 " a screenwriting plugin for vim
-" Version:      0.0.28
+" Version:      0.0.29
 " Updated:      2008-10-13
 " Maintainer:   Mike Zazaian, mike@zop.io, http://zop.io
 " Originator:   Alex Lance, alla at cyber.com.au
@@ -38,7 +38,9 @@
 "   p (CONTINUED) comments
 "   p (Cont'd) elements when dialogue for a single characters spills onto another
 "   page
-"
+" 
+" Known Bugs
+" 1: Backspace doesn't call new elements when jumping to a previous line. 
 "
 " /// OMIT AFTER USING FOR REFERENCE ///
 " The definition of a well formatted screenplay (as I understand it) goes
@@ -163,7 +165,8 @@ let g:alphaall = g:alphalower + g:alphaupper
 let g:otherkeys = ['<Space>','!','.','-','?']
 
 " Definition of Accepted Screenplay Characters
-let g:screenchars = "[A-Za-z_0-9\?\!\.\-]"
+"let g:screenchars = "[A-Za-z_0-9\?\!\.\-]"
+let g:screenchars = "[^ ].*"
 
 fu! MapUppercase()  
   if g:current == "transition"
@@ -251,6 +254,29 @@ fu! ElementDetect(direction)
   
 endfu
 
+fu! BackspaceAdjust()
+  let [s:lnum, s:linestart] = searchpos(g:screenchars, "bnc", line("."))
+  let [s:lnum, s:colonpos] = searchpos(":", "bnc", line("."))
+  let [s:lnum, s:endofline] = searchpos("$", "bnc", line("."))
+
+  if s:linestart == 0
+    let s:rtn = repeat(' ', 10)
+  elseif s:linestart == 11
+    call Action("none")
+  elseif s:linestart == 21
+    call Dialogue("none")
+  elseif s:linestart == 26
+    call Parenthetical("none")
+  elseif s:linestart == 31
+    call Character("none")
+  elseif s:colonpos == 70
+    call Transition("none")
+  endif
+
+  call cursor(line("."), s:endofline)
+  return ""
+endfu
+
 
 fu! Scene(key_pressed)
   let g:current = "scene"
@@ -267,7 +293,8 @@ fu! Scene(key_pressed)
     if s:col > 0
       let s:rtn = "\<BS>"
     else
-      let s:rtn = repeat("\<BS>", s:x_coord) . repeat(' ', s:begins - 1)
+      let s:rtn = repeat("\<BS>", s:x_coord)
+      call BackspaceAdjust()
     endif
   elseif a:key_pressed == "enter"
     let s:rtn = "\<Enter>"
@@ -295,7 +322,8 @@ fu! Action(key_pressed)
     if s:col > 0
       let s:rtn = "\<BS>"
     else
-      let s:rtn = repeat("\<BS>", s:x_coord) . repeat(' ', s:begins - 1)
+      let s:rtn = repeat("\<BS>", s:x_coord)
+      call BackspaceAdjust()
     endif
   elseif a:key_pressed == "enter"
     let [s:lnum, s:chars] = searchpos(g:screenchars, "bnc", line("."))
@@ -342,8 +370,7 @@ fu! Dialogue(key_pressed)
     if col > 0
       let s:rtn = "\<BS>"
     else
-      let s:rtn = repeat("\<BS>", 10)
-      call Action("new")
+      let s:rtn = repeat("\<BS>", 10) . BackspaceAdjust()
     endif
   elseif a:key_pressed == "enter"    
     if g:previous == "parenthetical"
@@ -388,7 +415,7 @@ fu! Parenthetical(key_pressed)
       endif
 
       let s:rtn = "\<right>" . repeat("\<BS>", s:backspaces)
-      call Dialogue("new")
+      call BackspaceAdjust()
     endif
   else
     let s:rtn = ""
@@ -415,7 +442,7 @@ fu! Character(key_pressed)
       let s:rtn = "\<BS>"
     else
       let s:rtn = repeat("\<BS>", 5) . "()\<left>"
-      call Parenthetical("new")
+      call BackspaceAdjust()
     endif
   elseif a:key_pressed == "enter"
     let s:rtn = "\<CR>\<CR>\<Esc>I".repeat(' ', s:begins - 1)
@@ -447,7 +474,7 @@ fu! Transition(key_pressed)
       echo col
     else
       let s:rtn = "\<Del>\<Esc>A" . repeat("\<BS>", 39)
-      call Character("new")
+      call BackspaceAdjust()
     endif
   else
     let s:rtn = ""
