@@ -1,8 +1,8 @@
 "
 " Pago
 " a screenwriting plugin for vim
-" Version:      0.0.26
-" Updated:      2008-10-12
+" Version:      0.0.28
+" Updated:      2008-10-13
 " Maintainer:   Mike Zazaian, mike@zop.io, http://zop.io
 " Originator:   Alex Lance, alla at cyber.com.au
 " License:      This file is placed in the public domain.
@@ -118,7 +118,7 @@ imap <BS> <C-R>=ScreenplayBackspacePressed()<CR>
 imap  <C-R>=ScreenplayBackspacePressed()<CR>
 ino <Up> <Up><C-R>=ElementDetect("up")<CR>
 ino <Down> <Down><C-R>=ElementDetect("down")<CR>
-no <Insert> <Insert><C-R>=ElementDetect("insert")<CR>
+" no <Insert> <Insert><C-R>=ElementDetect("insert")<CR>
 no <Up> <Insert><Up><C-R>=ElementDetect("up")<CR><Esc>
 no <Down> <Insert><Down><C-R>=ElementDetect("down")<CR><Esc>
 
@@ -269,13 +269,18 @@ fu! Scene(key_pressed)
     else
       let s:rtn = repeat("\<BS>", s:x_coord) . repeat(' ', s:begins - 1)
     endif
+  elseif a:key_pressed == "enter"
+    let s:rtn = "\<Enter>"
   else
     let s:rtn = ""
     call cursor(line("."), s:begins)
   endif
+
+  return s:rtn
 endfu
 
 fu! Action(key_pressed)
+  let g:previous = g:current
   let g:current = "action"
   let s:begins = 11
   let s:ends = 70
@@ -292,6 +297,26 @@ fu! Action(key_pressed)
     else
       let s:rtn = repeat("\<BS>", s:x_coord) . repeat(' ', s:begins - 1)
     endif
+  elseif a:key_pressed == "enter"
+    let [s:lnum, s:chars] = searchpos(g:screenchars, "bnc", line("."))
+    if s:chars > 0
+      let s:rtn = "\<CR>\<CR>"
+    else
+      if exists("g:switch")
+        let g:switch += 1
+      else
+        let g:switch = 1
+      endif
+
+      let s:rtn = ""
+      if g:previous == "action"
+        call Scene("none")
+      endif
+      if g:switch == 2
+        let s:rtn = "\<CR>"
+        let g:switch = 0
+      endif
+    endif
   else
     let s:rtn = ""
     call cursor(line("."), s:begins)
@@ -302,6 +327,7 @@ endfu
 
 fu! Dialogue(key_pressed)
   let s:x_coord = col(".")
+  let g:previous = g:current
   let g:current = "dialogue"
   let s:begins = 21
   let s:ends = 55
@@ -318,6 +344,14 @@ fu! Dialogue(key_pressed)
     else
       let s:rtn = repeat("\<BS>", 10)
       call Action("new")
+    endif
+  elseif a:key_pressed == "enter"    
+    if g:previous == "parenthetical"
+      let [s:lnum, s:endofline] = searchpos("$", "nc", line("."))
+      call cursor(line("."), s:endofline)
+      let s:rtn = "\<CR>\<Esc>I".repeat(' ', s:begins - 1)
+    elseif g:previous == "character"
+      let s:rtn = "\<CR>\<Esc>I".repeat(' ', s:begins - 1)
     endif
   else
     let s:rtn = ""
@@ -383,6 +417,8 @@ fu! Character(key_pressed)
       let s:rtn = repeat("\<BS>", 5) . "()\<left>"
       call Parenthetical("new")
     endif
+  elseif a:key_pressed == "enter"
+    let s:rtn = "\<CR>\<CR>\<Esc>I".repeat(' ', s:begins - 1)
   else
     let s:rtn = ""
     call cursor(line("."), s:begins)
@@ -422,69 +458,41 @@ fu! Transition(key_pressed)
 endfu
 
 
-function! ScreenplayEnterPressed()
-  let [lnum, col] = searchpos('[^ ].*', 'bnc', line("."))
-
-  let len = len(g:counter)
-  if len > 0
-    let len = len -1
-  endif
-    
-  let prev_col = get(g:counter,len)
-  call add(g:counter, printf("%d",col))
-  let rtn = "\<CR>"
-  set tw=70
-
-  " Action -> Scene Heading
-  if col == 11
-
-    call Scene()
-
-  " Scene Heading -> Next Action Line
- 
-  " Name -> Dialog
-  elseif col == 31 && !pumvisible()
-    set tw=55
-    let rtn = "\<CR>\<Esc>I".repeat(' ', 20)
-    call UnmapUppercase()
-
-  " Parenthentical -> Dialogue
-  elseif col == 26
-    set tw=55
-    let rtn = "\<CR>\<Esc>I".repeat(' ', 20)
-
-  " Dialog -> New Name
-  elseif col == 21
-    set tw=55
-    let rtn = "\<CR>\<CR>\<Esc>I".repeat(' ', 30)
-    call MapUppercase()
-
-  " Dialog -> Action
-  elseif prev_col == 21 && col == 0
-    set tw=70
-    let rtn = "\<Esc>I".repeat("\<BS>", 10)
-  endif
-
-  "return rtn .prev_col." - ".col
-  return rtn 
-endfunction
+fu! ScreenplayEnterPressed()
+  let s:key = "enter"
+   
+    if g:current == "scene"
+      let s:rtn = Action(s:key)
+    elseif g:current == "action"
+      let s:rtn = Action(s:key)
+    elseif g:current == "dialogue"
+      let s:rtn = Character(s:key)
+    elseif g:current == "parenthetical"
+      let s:rtn = Dialogue(s:key)
+    elseif g:current == "character"
+      let s:rtn = Dialogue(s:key)
+    elseif g:current == "transition"
+      let s:rtn = Scene(s:key)
+    endif
+  
+    return s:rtn
+endfu
 
 
 function! ScreenplayTabPressed()
   let s:key = "tab"
-  let s:coord = col(".")
   
-  if s:coord < 21
-    let s:rtn = Dialogue(s:key)
-  elseif s:coord == 21
-    let s:rtn = Parenthetical(s:key)
-  elseif s:coord == 27 
-    let s:rtn = Character(s:key)
-  elseif s:coord >= 31 && s:coord < 70
-    let s:rtn = Transition(s:key)
-  elseif s:coord >= 70
-    let s:rtn = Action(s:key)
-  endif
+    if g:current == "action" || g:current == "scene"
+      let s:rtn = Dialogue(s:key)
+    elseif g:current == "dialogue"
+      let s:rtn = Parenthetical(s:key)
+    elseif g:current == "parenthetical"
+      let s:rtn = Character(s:key)
+    elseif g:current == "character"
+      let s:rtn = Transition(s:key)
+    elseif g:current == "transition"
+      let s:rtn = Action(s:key)
+    endif
 
   return s:rtn 
 endfunction
@@ -492,8 +500,10 @@ endfunction
 
 function! ScreenplayBackspacePressed()
   let s:key = "backspace"
-    
-    if g:current == "transition"
+   
+    if g:current == "scene"
+      let s:rtn = Scene(s:key)
+    elseif g:current == "transition"
       let s:rtn = Transition(s:key)
     elseif g:current == "character"
       let s:rtn = Character(s:key)
@@ -572,4 +582,4 @@ function! ScreenplayCompleteCharacterName(findstart, base)
 endfun
 set completefunc=ScreenplayCompleteCharacterName
 
-call Scene()
+call Scene("dummy")
