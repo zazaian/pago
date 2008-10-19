@@ -233,11 +233,11 @@ fu! ElementDetect(direction)
   let s:x_coord = col(".")
 
   if s:colon != 70
-    if s:indent < 10  
+    if s:indent < 10 
       return repeat("\<BS>", s:x_coord - 1) . repeat(' ', 10)
     elseif s:indent == 10
       " Check whether the line is a SCENE element
-      let s:n = search('\(EXT\.\ \)\|\(INT\.\ .\)\|\(INT..EXT\.\ \)', 'ncp', line("."))
+      let s:n = search('^[ ].*[INT|EXT]\.', 'bncp', line("."))
       " Check whether there are any lowercase characters on the line
       let s:l = search('[a-z]', 'ncp', line("."))
       if s:n > 0 && s:l < 1
