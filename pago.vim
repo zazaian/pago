@@ -1,8 +1,8 @@
 "
 " Pago
 " a screenwriting plugin for vim
-" Version:      0.0.29
-" Updated:      2008-10-13
+" Version:      0.1.0
+" Updated:      2008-10-19
 " Maintainer:   Mike Zazaian, mike@zop.io, http://zop.io
 " Originator:   Alex Lance, alla at cyber.com.au
 " License:      This file is placed in the public domain.
@@ -116,7 +116,7 @@ let g:counter = []
 " Three listeners: Enter, Tab and Backspace
 imap <CR> <C-R>=ScreenplayEnterPressed()<CR>
 imap <TAB> <C-R>=ScreenplayTabPressed()<CR>
-imap <BS> <C-R>=ScreenplayBackspacePressed()<CR>
+imap <BS> <C-R>=ScreenplayBackspacePressed()<CR><C-R>=ElementDetect("none")<CR>
 imap  <C-R>=ScreenplayBackspacePressed()<CR>
 ino <Up> <Up><C-R>=ElementDetect("up")<CR>
 ino <Down> <Down><C-R>=ElementDetect("down")<CR>
@@ -165,8 +165,8 @@ let g:alphaall = g:alphalower + g:alphaupper
 let g:otherkeys = ['<Space>','!','.','-','?']
 
 " Definition of Accepted Screenplay Characters
-"let g:screenchars = "[A-Za-z_0-9\?\!\.\-]"
-let g:screenchars = "[^ ].*"
+let g:screenchars = "[A-Za-z_0-9\?\!\.\-]"
+let g:emptyline = "[^ ].*"
 
 fu! MapUppercase()  
   if g:current == "transition"
@@ -228,13 +228,23 @@ endfu
 fu! ElementDetect(direction)
   " Detect indent of new line
   let s:indent = indent(line("."))
-  let [lnum, s:colon] = searchpos("[:]", "enc", line("."))
-  let [lnum, s:chars] = searchpos(g:screenchars , "bnc", line("."))
+  let s:colon = ColonPos(".")
+  let s:chars = LineStart(".")
   let s:x_coord = col(".")
 
   if s:colon != 70
-    if s:indent == 10
-      call Action(a:direction)
+    if s:indent < 10  
+      return repeat("\<BS>", s:x_coord - 1) . repeat(' ', 10)
+    elseif s:indent == 10
+      " Check whether the line is a SCENE element
+      let s:n = search('\(EXT\.\ \)\|\(INT\.\ .\)\|\(INT..EXT\.\ \)', 'ncp', line("."))
+      " Check whether there are any lowercase characters on the line
+      let s:l = search('[a-z]', 'ncp', line("."))
+      if s:n > 0 && s:l < 1
+        call Scene(a:direction)
+      else
+        call Action(a:direction)
+      endif
     elseif s:indent == 20 
       call Dialogue(a:direction)
     elseif s:indent == 25
@@ -244,8 +254,6 @@ fu! ElementDetect(direction)
     endif
   elseif s:colon == 70
     call Transition(a:direction)
-  elseif s:chars < 0  
-    return repeat("\<BS>", s:x_coord - 1) . repeat(' ', 10)
   else
     call Action(a:direction)
   endif
@@ -254,29 +262,58 @@ fu! ElementDetect(direction)
   
 endfu
 
-fu! BackspaceAdjust()
-  let [s:lnum, s:linestart] = searchpos(g:screenchars, "bnc", line("."))
-  let [s:lnum, s:colonpos] = searchpos(":", "bnc", line("."))
-  let [s:lnum, s:endofline] = searchpos("$", "bnc", line("."))
-
-  if s:linestart == 0
-    let s:rtn = repeat(' ', 10)
-  elseif s:linestart == 11
-    call Action("none")
-  elseif s:linestart == 21
-    call Dialogue("none")
-  elseif s:linestart == 26
-    call Parenthetical("none")
-  elseif s:linestart == 31
-    call Character("none")
-  elseif s:colonpos == 70
-    call Transition("none")
-  endif
-
-  call cursor(line("."), s:endofline)
-  return ""
+" Line Length and Cursor Position Functions
+fu! LineStart(line_num)
+  let [s:lnum, s:linestart] = searchpos("[^ ].*", "bnc", line(a:line_num))
+  return s:linestart
 endfu
 
+fu! LineEnd(line_num)
+  let [s:lnum, s:endline] = searchpos("$", "nc", line(a:line_num))
+  return s:endline
+endfu
+
+fu! ColonPos(line_num)
+  let [s:lnum, s:colonpos] = searchpos(":", "enc", line(a:line_num))
+  return s:colonpos
+endfu
+
+fu! CursorPos(line_num)
+    let [s:buffer, s:lnum, s:cursorpos, s:off] = getpos(a:line_num)
+    return s:cursorpos
+endfu
+" End Line Length and Cursor Position Functions
+" 
+" fu! BackspaceAdjust()
+"   let s:linestart = LineStart(".")
+"   let s:colonpos = ColonPos(".")
+"   let s:endline = LineEnd(".")
+"   let s:x_coord = col(".")
+" 
+"   if s:linestart == 0
+"   elseif s:linestart == 11
+"     let s:rtn = Action("none")
+"   elseif s:linestart == 21
+"     let s:rtn = Dialogue("none")
+"   elseif s:linestart == 26
+"     let s:rtn = Parenthetical("none")
+"   elseif s:linestart == 31
+"     let s:rtn = Character("none")
+"   elseif s:colonpos == 70
+"     let s:rtn = Transition("none")
+"   endif
+" 
+"   call cursor(line("."), s:endline)
+"   return s:rtn
+" endfu
+
+
+let scene = { 'name': 'scene', 'begins': 11, 'ends': 70, 'case': 'upper', 'align': 'L' }
+let action = { 'name': 'action', 'begins': 11, 'ends': 70, 'case': 'lower', 'align': 'L' }
+let dialogue = { 'name': 'dialogue', 'begins': 21, 'ends': 55, 'case': 'lower', 'align': 'L' }
+let parenthetical = { 'name': 'parenthetical', 'begins': 21, 'ends': 55, 'case': 'lower', 'align': 'L' }
+let character = { 'name': 'character', 'begins': 31, 'ends': 70, 'case': 'upper', 'align': 'L' }
+let transition = { 'name': 'transition', 'begins': 70, 'ends': 11, 'case': 'upper', 'align': 'R' }
 
 fu! Scene(key_pressed)
   let g:current = "scene"
@@ -289,18 +326,18 @@ fu! Scene(key_pressed)
   if a:key_pressed == "tab"
     let s:rtn = "\<Del>" . repeat("\<BS>", s:x_coord - 1) . repeat(' ', s:begins - 1)
   elseif a:key_pressed == "backspace"
-    let [s:lnum, s:col] = searchpos(g:screenchars, "bnc", line("."))
+    let [s:lnum, s:col] = searchpos(g:emptyline, "bnc", line("."))
     if s:col > 0
       let s:rtn = "\<BS>"
     else
       let s:rtn = repeat("\<BS>", s:x_coord)
-      call BackspaceAdjust()
     endif
   elseif a:key_pressed == "enter"
     let s:rtn = "\<Enter>"
   else
     let s:rtn = ""
-    call cursor(line("."), s:begins)
+    let s:endline = LineEnd(".")
+    call cursor(line("."), s:endline)
   endif
 
   return s:rtn
@@ -317,16 +354,8 @@ fu! Action(key_pressed)
   
   if a:key_pressed == "tab"
     let s:rtn = "\<Del>" . repeat("\<BS>", s:x_coord - 1) . repeat(' ', s:begins - 1)
-  elseif a:key_pressed == "backspace"
-    let [s:lnum, s:col] = searchpos(g:screenchars, "bnc", line("."))
-    if s:col > 0
-      let s:rtn = "\<BS>"
-    else
-      let s:rtn = repeat("\<BS>", s:x_coord)
-      call BackspaceAdjust()
-    endif
   elseif a:key_pressed == "enter"
-    let [s:lnum, s:chars] = searchpos(g:screenchars, "bnc", line("."))
+    let [s:lnum, s:chars] = searchpos(g:emptyline, "bnc", line("."))
     if s:chars > 0
       let s:rtn = "\<CR>\<CR>"
     else
@@ -341,13 +370,14 @@ fu! Action(key_pressed)
         call Scene("none")
       endif
       if g:switch == 2
-        let s:rtn = "\<CR>"
+        let s:rtn = "\<CR>\<CR>"
         let g:switch = 0
       endif
     endif
   else
     let s:rtn = ""
-    call cursor(line("."), s:begins)
+    let s:endline = LineEnd(".")
+    call cursor(line("."), s:endline)
   endif
 
   return s:rtn
@@ -366,11 +396,11 @@ fu! Dialogue(key_pressed)
     let s:x_change = s:begins - s:x_coord
     let s:rtn = repeat(' ', s:x_change)
   elseif a:key_pressed == "backspace"
-    let [lnum, col] = searchpos(g:screenchars , "bnc", line(".")) 
+    let [lnum, col] = searchpos(g:emptyline , "bnc", line(".")) 
     if col > 0
       let s:rtn = "\<BS>"
     else
-      let s:rtn = repeat("\<BS>", 10) . BackspaceAdjust()
+      let s:rtn = repeat("\<BS>", 10)
     endif
   elseif a:key_pressed == "enter"    
     if g:previous == "parenthetical"
@@ -382,7 +412,8 @@ fu! Dialogue(key_pressed)
     endif
   else
     let s:rtn = ""
-    call cursor(line("."), s:begins)
+    let s:endline = LineEnd(".")
+    call cursor(line("."), s:endline)
   endif
 
   return s:rtn
@@ -400,7 +431,7 @@ fu! Parenthetical(key_pressed)
     let s:x_change = s:begins - s:x_coord
     let s:rtn = repeat(' ', s:x_change) . "()\<Left>"
   elseif a:key_pressed == "backspace"
-    let [lnum, col] = searchpos(g:screenchars , "bnc", line(".")) 
+    let [lnum, col] = searchpos(g:emptyline , "bnc", line(".")) 
     if col > 0
       let s:rtn = "\<BS>"
     else
@@ -415,11 +446,11 @@ fu! Parenthetical(key_pressed)
       endif
 
       let s:rtn = "\<right>" . repeat("\<BS>", s:backspaces)
-      call BackspaceAdjust()
     endif
   else
     let s:rtn = ""
-    call cursor(line("."), s:begins)
+    let s:endline = LineEnd(".")
+    call cursor(line("."), s:endline)
   endif
 
   return s:rtn
@@ -442,13 +473,13 @@ fu! Character(key_pressed)
       let s:rtn = "\<BS>"
     else
       let s:rtn = repeat("\<BS>", 5) . "()\<left>"
-      call BackspaceAdjust()
     endif
   elseif a:key_pressed == "enter"
     let s:rtn = "\<CR>\<CR>\<Esc>I".repeat(' ', s:begins - 1)
   else
     let s:rtn = ""
-    call cursor(line("."), s:begins)
+    let s:endline = LineEnd(".")
+    call cursor(line("."), s:endline)
   endif
 
   return s:rtn
@@ -463,7 +494,7 @@ fu! Transition(key_pressed)
   call ElementHelper(s:begins, s:ends, s:case)
   set tw=1000
 
-  let [lnum, col] = searchpos(g:screenchars , 'bnc', line("."))
+  let [lnum, col] = searchpos(g:emptyline , 'bnc', line("."))
   if a:key_pressed == "tab"
 "    if col > 0
     let s:x_change = s:begins - s:x_coord
@@ -474,11 +505,11 @@ fu! Transition(key_pressed)
       echo col
     else
       let s:rtn = "\<Del>\<Esc>A" . repeat("\<BS>", 39)
-      call BackspaceAdjust()
     endif
   else
     let s:rtn = ""
-    call cursor(line("."), s:begins)
+    let s:endline = LineEnd(".")
+    call cursor(line("."), s:endline)
   endif
 
   return s:rtn
@@ -527,10 +558,11 @@ endfunction
 
 function! ScreenplayBackspacePressed()
   let s:key = "backspace"
+  let s:cursorpos = CursorPos(".")
+  let s:linestart = LineStart(".")
+  let s:x_coord = col(".")
    
-    if g:current == "scene"
-      let s:rtn = Scene(s:key)
-    elseif g:current == "transition"
+    if g:current == "transition"
       let s:rtn = Transition(s:key)
     elseif g:current == "character"
       let s:rtn = Character(s:key)
@@ -538,11 +570,23 @@ function! ScreenplayBackspacePressed()
       let s:rtn = Parenthetical(s:key)
     elseif g:current == "dialogue"
       let s:rtn = Dialogue(s:key)
-    elseif g:current == "action"
-      let s:rtn = Action(s:key)
+    elseif g:current == "action" || g:current == "scene"
+      if s:linestart > 0 && s:cursorpos != 11
+        let s:rtn = "\<BS>"
+      else
+        let s:rtn = repeat("\<BS>", s:x_coord)
+        let s:newline = line(".")
+        let s:newline -= 1 
+        let s:newlinestart = LineStart(s:newline)
+        if s:newlinestart <= 10
+          let s:rtn = s:rtn . repeat(" ", 10)
+        else
+          let s:rtn = s:rtn . "\<BS>"
+        endif
+      endif
     endif
-  
-    return s:rtn
+
+  return s:rtn
 endfunction
 
 
