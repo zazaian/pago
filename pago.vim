@@ -1,7 +1,7 @@
 "
 " Pago
 " a screenwriting plugin for vim
-" Version:      0.1.0
+" Version:      0.1.02
 " Updated:      2008-10-19
 " Maintainer:   Mike Zazaian, mike@zop.io, http://zop.io
 " Originator:   Alex Lance, alla at cyber.com.au
@@ -124,6 +124,10 @@ ino <Down> <Down><C-R>=ElementDetect("down")<CR>
 no <Up> <Insert><Up><C-R>=ElementDetect("up")<CR><Esc>
 no <Down> <Insert><Down><C-R>=ElementDetect("down")<CR><Esc>
 
+ino <Space> <Space><C-R>=SceneStart()<CR><Esc>
+no <Space> <Space><C-R>=SceneStart()<CR><Esc>
+
+
 " Reformat paragraph with Ctrl-P in insert and normal mode
 imap <C-P> <C-R>=ScreenplayCtrlPPressed()<CR>
 map <C-P> i<C-R>=ScreenplayCtrlPPressed()<CR>
@@ -180,7 +184,17 @@ fu! MapUppercase()
   endfor
 
   for key in g:otherkeys
-    exe "ino " . key . " " . g:premap . key
+    let key1 = key
+    let key2 = key
+
+    if g:current == "scene"
+      let g:premap = "<C-R>=SceneStart()<CR>"
+      let key2 = ""
+    else
+      let g:premap = ""
+    endif
+
+    exe "ino " . key1 . " " . g:premap . key2
   endfor
 
   return ""
@@ -283,6 +297,53 @@ fu! CursorPos(line_num)
     return s:cursorpos
 endfu
 " End Line Length and Cursor Position Functions
+
+" Various Helper Functions
+fu! ClearSearch()
+  let s:rtn = ':let @/=\"\"\<CR>'
+  return s:rtn
+endfu
+
+" If SCENE is the active element, cycle through scene prefixes with the <Space> bar
+fu! SceneStart()
+  if g:current == "scene"
+
+    let s:scenelist = search('\(INT\.\ \)\|\(EXT\.\ \)\|\(INT\.\/EXT\.\ \)\|\([^EXT\. |INT\. |INT\.\/EXT\. ]\)', "bncpe", line("."))
+    let s:lineend = LineEnd(".")
+    
+    if s:scenelist != 5
+      let s:clearsearch = ":let @/ = \"\"\<CR>"
+      if s:scenelist == 0
+        let s:rtn = "INT. "
+      elseif s:scenelist == 2
+        let s:rtn = "\<Esc>:s/INT\\. .*/EXT\\. /\<CR>" . s:clearsearch . "A"
+      elseif s:scenelist == 3
+        let s:rtn = "\<Esc>:s/EXT\\. .*/INT\\.\\/EXT\\. /\<CR>" . s:clearsearch . "A"
+      elseif s:scenelist == 4
+        let s:rtn = "\<Esc>:s/INT\\.\\/EXT\. .*/INT\\. /\<CR>" . s:clearsearch . "A"
+      endif
+
+"      let s:reset = repeat("\<Backspace>", s:lineend - 1) . repeat("\<Space>", 10)
+"      if s:scenelist == 0 || s:scenelist == 4
+"        let s:rtn = s:reset . "INT. "
+"      elseif s:scenelist == 2
+"        let s:rtn = s:reset . "EXT. "
+"      elseif s:scenelist == 3
+"        let s:rtn = s:reset . "INT./EXT. "
+"      endif
+
+    else
+      let s:rtn = "\<Space>"
+    endif
+  
+  else
+    let s:rtn = "\<Space>"
+  endif
+
+  return s:rtn
+endfu
+
+
 " 
 " fu! BackspaceAdjust()
 "   let s:linestart = LineStart(".")
