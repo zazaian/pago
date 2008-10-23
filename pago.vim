@@ -1,7 +1,7 @@
 "
 " Pago
-" a screenwriting plugin for vim
-" Version:      0.1.02
+" screenwriting for vim
+" Version:      0.1.3
 " Updated:      2008-10-19
 " Maintainer:   Mike Zazaian, mike@zop.io, http://zop.io
 " Originator:   Alex Lance, alla at cyber.com.au
@@ -41,6 +41,10 @@
 " 
 " Known Bugs
 " 1: Backspace doesn't call new elements when jumping to a previous line. 
+" 2: Remove cursor() call in each ELEMENT function which sets the cursor to the end
+" of the line automatically
+" 3: URGENT need for a function that automatically wraps and formats text if the word
+" count goes over the "end" value for a given element
 "
 " /// OMIT AFTER USING FOR REFERENCE ///
 " The definition of a well formatted screenplay (as I understand it) goes
@@ -116,7 +120,7 @@ let g:counter = []
 " Three listeners: Enter, Tab and Backspace
 imap <CR> <C-R>=ScreenplayEnterPressed()<CR>
 imap <TAB> <C-R>=ScreenplayTabPressed()<CR>
-imap <BS> <C-R>=ScreenplayBackspacePressed()<CR><C-R>=ElementDetect("none")<CR>
+imap <BS> <C-R>=ScreenplayBackspacePressed()<CR><C-R>=ElementDetect("backspace")<CR>
 imap  <C-R>=ScreenplayBackspacePressed()<CR>
 ino <Up> <Up><C-R>=ElementDetect("up")<CR>
 ino <Down> <Down><C-R>=ElementDetect("down")<CR>
@@ -191,7 +195,8 @@ fu! MapUppercase()
       let g:premap = "<C-R>=SceneStart()<CR>"
       let key2 = ""
     else
-      let g:premap = ""
+      let g:premap = g:premap
+      let key2 = key2
     endif
 
     exe "ino " . key1 . " " . g:premap . key2
@@ -240,13 +245,23 @@ fu! ElementHelper(begins, ends, case)
 endfu
 
 fu! ElementDetect(direction)
+
+  " Check if new line is empty.  If so, move on to next line before detecting
+  " element
+  let [s:newlinestart, s:newlineend, s:newline, s:nextline] = NewLineRange(".", a:direction)
+  if s:newlinestart == 11 && s:newlineend == 11
+    call cursor(s:nextline, col("$"))
+  endif
+
   " Detect indent of new line
   let s:indent = indent(line("."))
   let s:colon = ColonPos(".")
+  let s:colonend = ColonEnd(".")
+  let s:lowerchars = LowerChars(".")
   let s:chars = LineStart(".")
   let s:x_coord = col(".")
 
-  if s:colon != 70
+  if s:colon != 70 && s:colonend < 1 
     if s:indent < 10 
       return repeat("\<BS>", s:x_coord - 1) . repeat(' ', 10)
     elseif s:indent == 10
@@ -266,14 +281,15 @@ fu! ElementDetect(direction)
     elseif s:indent == 30
       call Character(a:direction)
     endif
-  elseif s:colon == 70
+  elseif s:colon == 70 || s:colonend > 0
     call Transition(a:direction)
   else
     call Action(a:direction)
   endif
 
   return ''
-  
+
+ 
 endfu
 
 " Line Length and Cursor Position Functions
@@ -292,10 +308,38 @@ fu! ColonPos(line_num)
   return s:colonpos
 endfu
 
+fu! ColonEnd(line_num)
+  let s:colonend = search(":$", "enc", line(a:line_num))
+  return s:colonend
+endfu
+
 fu! CursorPos(line_num)
     let [s:buffer, s:lnum, s:cursorpos, s:off] = getpos(a:line_num)
     return s:cursorpos
 endfu
+
+fu! LowerChars(line_num)
+  let s:lowerchars = search("[a-z]", "enc", line(a:line_num))
+  return s:lowerchars
+endfu
+
+
+fu! NewLineRange(line_num, key_pressed)
+  let s:newline = line(a:line_num)
+
+  if a:key_pressed == "up" || a:key_pressed == "backspace"
+    let s:nextline = s:newline - 1
+  elseif a:key_pressed == "down"
+    let s:nextline = s:newline + 1
+  endif
+
+  let s:newlinestart = LineStart(s:newline)
+  let s:newlineend = LineEnd(s:newline)
+  let s:newlinerange = [s:newlinestart, s:newlineend, s:newline, s:nextline]
+  return s:newlinerange
+endfu
+
+
 " End Line Length and Cursor Position Functions
 
 " Various Helper Functions
@@ -435,7 +479,7 @@ fu! Action(key_pressed)
         let g:switch = 0
       endif
     endif
-  else
+  elseif a:key_pressed != "backspace"
     let s:rtn = ""
     let s:endline = LineEnd(".")
     call cursor(line("."), s:endline)
@@ -636,13 +680,9 @@ function! ScreenplayBackspacePressed()
         let s:rtn = "\<BS>"
       else
         let s:rtn = repeat("\<BS>", s:x_coord)
-        let s:newline = line(".")
-        let s:newline -= 1 
-        let s:newlinestart = LineStart(s:newline)
+        let [s:newlinestart, s:newlineend, s:newline, s:nextline] = NewLineRange(".", "backspace")
         if s:newlinestart <= 10
           let s:rtn = s:rtn . repeat(" ", 10)
-        else
-          let s:rtn = s:rtn . "\<BS>"
         endif
       endif
     endif
@@ -714,4 +754,7 @@ function! ScreenplayCompleteCharacterName(findstart, base)
 endfun
 set completefunc=ScreenplayCompleteCharacterName
 
-call Scene("dummy")
+if !exists("g:current")
+  let g:current = "action"
+  call Action("none")
+endif
