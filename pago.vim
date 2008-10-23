@@ -1,8 +1,8 @@
 "
 " Pago
 " screenwriting for vim
-" Version:      0.1.3
-" Updated:      2008-10-19
+" Version:      0.2.0
+" Updated:      2008-10-23
 " Maintainer:   Mike Zazaian, mike@zop.io, http://zop.io
 " License:      This file is placed in the public domain.
 "
@@ -39,32 +39,12 @@
 "   page
 " 
 " Known Bugs
-" 1: Backspace doesn't call new elements when jumping to a previous line. 
+" RESOLVED 1: Backspace doesn't call new elements when jumping to a previous line. 
 " 2: Remove cursor() call in each ELEMENT function which sets the cursor to the end
 " of the line automatically
 " 3: URGENT need for a function that automatically wraps and formats text if the word
 " count goes over the "end" value for a given element
 "
-" /// OMIT AFTER USING FOR REFERENCE ///
-" The definition of a well formatted screenplay (as I understand it) goes
-" something like:
-"
-" <15 spaces>SCENE/ACTION/DESCRIPTIONS (max 54 chars before wrapping)
-" <37 spaces>CHARACTER NAME
-" <25 spaces>DIALOG (max 35 chars before wrapping)
-"
-" It might look like:
-"
-"
-"              EXT. CITY STREET - DAY
-"
-"              Rain pissing down. Newspaper KID on street. A MAN stops
-"              to listen.
-"
-"                                    KID
-"                              (shouting)
-"                        Extra! Extra! Child labour used to
-"                        sell newspapers!
 "
 " Features
 " ========
@@ -76,22 +56,6 @@
 "    Dialog  == 26 spaces == 2 tabs
 "    Speaker == 38 spamce == 3 tabs
 "
-"  * The textwidth (tw) variable switches from 68 to 60, when moving from
-"    ACTION to DIALOG. This ensures good margins.
-"
-"  * Control-p will format a paragraph from under the cursor
-"    downwards, relative to the (textwidth) margin
-"
-"  * When you tab three times to type in a character name for DIALOG, and you
-"    type the first letter of the characters name and then tab again, then you
-"    will be presented with a choice to autocomplete that characters name.
-"    (provided you've typed that characters name above a DIALOG at least once
-"    before).
-"  
-"  * Hitting enter after DIALOG should align for a new character name 
-"
-"  * Hitting enter twice after DIALOG should align for new ACTION block
-"       
 " TODO: 
 "  - provide indentation and textwidth settings for ACTOR DIRECTIONS (31
 "    spaces and then ACTOR DIRECTION in brackets)
@@ -117,10 +81,10 @@ let loaded_pago = 1
 let g:counter = []
 
 " Three listeners: Enter, Tab and Backspace
-imap <CR> <C-R>=ScreenplayEnterPressed()<CR>
-imap <TAB> <C-R>=ScreenplayTabPressed()<CR>
-imap <BS> <C-R>=ScreenplayBackspacePressed()<CR><C-R>=ElementDetect("backspace")<CR>
-imap  <C-R>=ScreenplayBackspacePressed()<CR>
+imap <CR> <C-R>=EnterPressed()<CR>
+imap <TAB> <C-R>=TabPressed()<CR>
+imap <BS> <C-R>=BackspacePressed()<CR><C-R>=ElementDetect("backspace")<CR>
+imap  <C-R>=BackspacePressed()<CR>
 ino <Up> <Up><C-R>=ElementDetect("up")<CR>
 ino <Down> <Down><C-R>=ElementDetect("down")<CR>
 " no <Insert> <Insert><C-R>=ElementDetect("insert")<CR>
@@ -132,8 +96,8 @@ no <Space> <Space><C-R>=SceneStart()<CR><Esc>
 
 
 " Reformat paragraph with Ctrl-P in insert and normal mode
-imap <C-P> <C-R>=ScreenplayCtrlPPressed()<CR>
-map <C-P> i<C-R>=ScreenplayCtrlPPressed()<CR>
+imap <C-P> <C-R>=CtrlPPressed()<CR>
+map <C-P> i<C-R>=CtrlPPressed()<CR>
 
 " map ctrl-d to clean up all the whitespace so that ctrl-p work correctly
 "imap <C-D> !A!<Esc>:%s/^[ ]\{1,}$//g<CR>?!A!<CR>df!i
@@ -271,28 +235,6 @@ fu! NewLineRange(line_num, key_pressed)
   return s:newlinerange
 endfu
 
-
-fu! ElementHelper(begins, ends, case)
-  
-  if g:current == "scene"
-    set cursorline
-  else
-    set nocursorline
-  endif
-
-  exe "set tw=" . a:ends
-  call ToggleCase(a:case)
-  
-  let g:statustxt = toupper(g:current)
-  set statusline=%<[%02n]\ %F%(\ %m%h%w%y%r%)\ %{g:statustxt}\ %a%=\ %8l,%c%V/%L\ (%P)\ [%08O:%02B]
-
-"  call cursor(line("."), a:begins)
-
-  return ''
-
-endfu
-
-
 fu! ElementDetect(direction)
 
   " Detect indent of new line
@@ -319,34 +261,27 @@ fu! ElementDetect(direction)
       " Check whether there are any lowercase characters on the line
       let s:l = search('[a-z]', 'ncp', line("."))
       if s:n > 0 && s:l < 1
-        call Scene(a:direction)
+        call Element(g:scene)
       else
-        " Check if new line is empty.  If so, move on to next line before detecting
-        " element
-        call Action(a:direction)
+        call Element(g:action)
       endif
     elseif s:indent == 20 
-      call Dialogue(a:direction)
+      call Element(g:dialogue)
     elseif s:indent == 25
-      call Parenthetical(a:direction)
+      call Element(g:parenthetical)
     elseif s:indent == 30
-      call Character(a:direction)
+      call Element(g:character)
     endif
   elseif s:colon == 70 || s:colonend > 0
-    call Transition(a:direction)
+    call Element(g:transition)
   else
-    call Action(a:direction)
-  endif 
+    call Element(g:action)
+  endif
+  
   return '' 
 endfu
 
 " End Line Length and Cursor Position Functions
-
-" Various Helper Functions
-fu! ClearSearch()
-  let s:rtn = ':let @/=\"\"\<CR>'
-  return s:rtn
-endfu
 
 " If SCENE is the active element, cycle through scene prefixes with the <Space> bar
 fu! SceneStart()
@@ -367,15 +302,6 @@ fu! SceneStart()
         let s:rtn = "\<Esc>:s/INT\\.\\/EXT\. .*/INT\\. /\<CR>" . s:clearsearch . "A"
       endif
 
-"      let s:reset = repeat("\<Backspace>", s:lineend - 1) . repeat("\<Space>", 10)
-"      if s:scenelist == 0 || s:scenelist == 4
-"        let s:rtn = s:reset . "INT. "
-"      elseif s:scenelist == 2
-"        let s:rtn = s:reset . "EXT. "
-"      elseif s:scenelist == 3
-"        let s:rtn = s:reset . "INT./EXT. "
-"      endif
-
     else
       let s:rtn = "\<Space>"
     endif
@@ -388,65 +314,47 @@ fu! SceneStart()
 endfu
 
 
-let scene = { 'name': 'scene', 'begins': 11, 'ends': 70, 'case': 'upper', 'align': 'L' }
-let action = { 'name': 'action', 'begins': 11, 'ends': 70, 'case': 'lower', 'align': 'L' }
-let dialogue = { 'name': 'dialogue', 'begins': 21, 'ends': 55, 'case': 'lower', 'align': 'L' }
-let parenthetical = { 'name': 'parenthetical', 'begins': 21, 'ends': 55, 'case': 'lower', 'align': 'L' }
-let character = { 'name': 'character', 'begins': 31, 'ends': 70, 'case': 'upper', 'align': 'L' }
-let transition = { 'name': 'transition', 'begins': 70, 'ends': 11, 'case': 'upper', 'align': 'R' }
-
-let elements = ['scene', 'action', 'dialogue', 'parenthetical', 'character', 'transition']
-let element = {}
-for i in elements
-  exe "let element." . i . " = " . i
-endfor
-
+let g:scene = { 'name': 'scene', 'begins': 11, 'ends': 70, 'case': 'upper', 'align': 'L' }
+let g:action = { 'name': 'action', 'begins': 11, 'ends': 70, 'case': 'lower', 'align': 'L' }
+let g:dialogue = { 'name': 'dialogue', 'begins': 21, 'ends': 55, 'case': 'lower', 'align': 'L' }
+let g:parenthetical = { 'name': 'parenthetical', 'begins': 26, 'ends': 55, 'case': 'lower', 'align': 'L' }
+let g:character = { 'name': 'character', 'begins': 31, 'ends': 70, 'case': 'upper', 'align': 'L' }
+let g:transition = { 'name': 'transition', 'begins': 70, 'ends': 11, 'case': 'upper', 'align': 'R' }
 
 fu! Element(element)
-endfu
+  let g:previous = g:current
+  let g:current = a:element.name
 
-fu! Scene(key_pressed)
-  let g:current = "scene"
-  let s:begins = 11
-  let s:ends = 70
-  let s:case = "upper"
-  let s:x_coord = col(".")
-  call ElementHelper(s:begins, s:ends, s:case)
-  
-  if a:key_pressed == "tab"
-    let s:rtn = "\<Del>" . repeat("\<BS>", s:x_coord - 1) . repeat(' ', s:begins - 1)
-  elseif a:key_pressed == "backspace"
-    let [s:lnum, s:col] = searchpos(g:emptyline, "bnc", line("."))
-    if s:col > 0
-      let s:rtn = "\<BS>"
-    else
-      let s:rtn = repeat("\<BS>", s:x_coord)
-    endif
-  elseif a:key_pressed == "enter"
-    let s:rtn = "\<Enter>"
+  if g:current == "scene"
+    set cursorline
   else
-    let s:rtn = ""
-    " let s:endline = LineEnd(".")
-    " call cursor(line("."), s:endline)
+    set nocursorline
   endif
 
-  return s:rtn
+  if g:current == "transition"
+    let s:textwrap = 1000
+  else
+    let s:textwrap = a:element.ends
+  endif
+
+  call cursor(line("."), a:element.ends)
+
+  exe "set tw=" . s:textwrap
+  call ToggleCase(a:element.case)
+  
+  let g:statustxt = toupper(g:current)
+  set statusline=%<[%02n]\ %F%(\ %m%h%w%y%r%)\ %{g:statustxt}\ %a%=\ %8l,%c%V/%L\ (%P)\ [%08O:%02B]
+
+  return ''
 endfu
 
-fu! Action(key_pressed)
-  let g:previous = g:current
-  let g:current = "action"
-  let s:begins = 11
-  let s:ends = 70
-  let s:x_coord = col(".")
-  let s:case = "lower"
-  call ElementHelper(s:begins, s:ends, s:case)
+fu! EnterPressed()
+  let s:linestart = LineStart(".")
+  let s:lineend = LineEnd(".")
   
-  if a:key_pressed == "tab"
-    let s:rtn = "\<Del>" . repeat("\<BS>", s:x_coord - 1) . repeat(' ', s:begins - 1)
-  elseif a:key_pressed == "enter"
-    let [s:lnum, s:chars] = searchpos(g:emptyline, "bnc", line("."))
-    if s:chars > 0
+  if g:current == "scene" || g:current == "action"
+    call Element(g:action)
+    if s:linestart > 0
       let s:rtn = "\<CR>\<CR>"
     else
       if exists("g:switch")
@@ -454,235 +362,116 @@ fu! Action(key_pressed)
       else
         let g:switch = 1
       endif
-
       let s:rtn = ""
       if g:previous == "action"
-        call Scene("none")
+        call Element(g:scene)
       endif
       if g:switch == 2
         let s:rtn = "\<CR>\<CR>"
         let g:switch = 0
       endif
     endif
-  elseif a:key_pressed != "backspace"
-    let s:rtn = ""
-    " let s:endline = LineEnd(".")
-    " call cursor(line("."), s:endline)
-  endif
 
-  return s:rtn
-endfu
+  elseif g:current == "dialogue"
+    call Element(g:character)
+    let s:rtn = "\<CR>\<CR>\<Esc>I".repeat(' ', g:character.begins - 1)
 
-fu! Dialogue(key_pressed)
-  let s:x_coord = col(".")
-  let g:previous = g:current
-  let g:current = "dialogue"
-  let s:begins = 21
-  let s:ends = 55
-  let s:case = "lower"
-  call ElementHelper(s:begins, s:ends, s:case)
-  
-  if a:key_pressed == "tab"
-    let s:x_change = s:begins - s:x_coord
-    let s:rtn = repeat(' ', s:x_change)
-  elseif a:key_pressed == "backspace"
-    let [lnum, col] = searchpos(g:emptyline , "bnc", line(".")) 
-    if col > 0
-      let s:rtn = "\<BS>"
-    else
-      let s:rtn = repeat("\<BS>", 10)
-    endif
-  elseif a:key_pressed == "enter"    
-    if g:previous == "parenthetical"
-      let [s:lnum, s:endofline] = searchpos("$", "nc", line("."))
-      call cursor(line("."), s:endofline)
-      let s:rtn = "\<CR>\<Esc>I".repeat(' ', s:begins - 1)
-    elseif g:previous == "character"
-      let s:rtn = "\<CR>\<Esc>I".repeat(' ', s:begins - 1)
-    endif
-  else
-    let s:rtn = ""
-    " let s:endline = LineEnd(".")
-    " call cursor(line("."), s:endline)
-  endif
+  elseif g:current == "parenthetical" || g:current == "character"
+    call Element(g:dialogue)
+    " call cursor(line("."), s:lineend)
+    let s:rtn = "\<CR>\<Esc>I".repeat(' ', g:dialogue.begins - 1)
 
-  return s:rtn
-endfu
-
-fu! Parenthetical(key_pressed)
-  let g:current = "parenthetical"
-  let s:begins = 26
-  let s:ends = 55
-  let s:x_coord = col(".")
-  let s:case = "lower"
-  call ElementHelper(s:begins, s:ends, s:case)
-
-  if a:key_pressed == "tab"
-    let s:x_change = s:begins - s:x_coord
-    let s:rtn = repeat(' ', s:x_change) . "()\<Left>"
-  elseif a:key_pressed == "backspace"
-    let [lnum, col] = searchpos(g:emptyline , "bnc", line(".")) 
-    if col > 0
-      let s:rtn = "\<BS>"
-    else
-      let [lnum, openparen] = searchpos("(", "bnc", line("."))
-      let [lnum, closeparen] = searchpos(")", "bnc", line("."))  
-      let s:backspaces = 5
-      if openparen > 0
-        let s:backspaces += 1
-      endif
-      if closeparen > 0
-        let s:backspaces += 1
-      endif
-
-      let s:rtn = "\<right>" . repeat("\<BS>", s:backspaces)
-    endif
-  else
-    let s:rtn = ""
-    " let s:endline = LineEnd(".")
-    " call cursor(line("."), s:endline)
-  endif
-
-  return s:rtn
-endfu
-
-fu! Character(key_pressed)
-  let g:current = "character"
-  let s:begins = 31
-  let s:ends = 70
-  let s:x_coord = col(".")
-  let s:case = "upper"
-  call ElementHelper(s:begins, s:ends, s:case)
-  
-  if a:key_pressed == "tab"
-    let s:x_change = s:begins - s:x_coord
-    let s:rtn = "\<Left>\<Del>\<Del>" . repeat(' ', s:x_change + 1)
-  elseif a:key_pressed == "backspace"
-    let [lnum, col] = searchpos(g:screenchars , "bnc", line(".")) 
-    if col > 0
-      let s:rtn = "\<BS>"
-    else
-      let s:rtn = repeat("\<BS>", 5) . "()\<left>"
-    endif
-  elseif a:key_pressed == "enter"
-    let s:rtn = "\<CR>\<CR>\<Esc>I".repeat(' ', s:begins - 1)
-  else
-    let s:rtn = ""
-    " let s:endline = LineEnd(".")
-    " call cursor(line("."), s:endline)
-  endif
-
-  return s:rtn
-endfu
-
-fu! Transition(key_pressed)
-  let g:current = "transition"
-  let s:begins = 70
-  let s:ends = 11
-  let s:x_coord = col(".")
-  let s:case = "upper"
-  call ElementHelper(s:begins, s:ends, s:case)
-  set tw=1000
-
-  let [lnum, col] = searchpos(g:emptyline , 'bnc', line("."))
-  if a:key_pressed == "tab"
-"    if col > 0
-    let s:x_change = s:begins - s:x_coord
-    let s:rtn = repeat(' ', s:x_change) . ":\<Left>"
-  elseif a:key_pressed == "backspace"
-    if col > 0
-      let s:rtn = "\<BS>\<Esc>:s/^/ /\<CR>:let @/ =\"\"\<CR>A\<Left>"
-      echo col
-    else
-      let s:rtn = "\<Del>\<Esc>A" . repeat("\<BS>", 39)
-    endif
-  else
-    let s:rtn = ""
-    " let s:endline = LineEnd(".")
-    " call cursor(line("."), s:endline)
+  elseif g:current == "transition"
+    call Element(g:scene)
+    let s:rtn = "\<CR>"
   endif
 
   return s:rtn
 endfu
 
 
-fu! ScreenplayEnterPressed()
-  let s:key = "enter"
-   
-    if g:current == "scene"
-      let s:rtn = Action(s:key)
-    elseif g:current == "action"
-      let s:rtn = Action(s:key)
-    elseif g:current == "dialogue"
-      let s:rtn = Character(s:key)
-    elseif g:current == "parenthetical"
-      let s:rtn = Dialogue(s:key)
-    elseif g:current == "character"
-      let s:rtn = Dialogue(s:key)
-    elseif g:current == "transition"
-      let s:rtn = Scene(s:key)
-    endif
-  
-    return s:rtn
-endfu
-
-
-function! ScreenplayTabPressed()
+function! TabPressed()
   let s:key = "tab"
+  let s:col = col(".")
   
     if g:current == "action" || g:current == "scene"
-      let s:rtn = Dialogue(s:key)
+      call Element(g:dialogue)
+      let s:x_change = g:dialogue.begins - s:col
+      let s:rtn = repeat(' ', s:x_change)
     elseif g:current == "dialogue"
-      let s:rtn = Parenthetical(s:key)
+      call Element(g:parenthetical)
+      let s:x_change = g:parenthetical.begins - s:col
+      let s:rtn = repeat(' ', s:x_change) . "()\<Left>"
     elseif g:current == "parenthetical"
-      let s:rtn = Character(s:key)
+      call Element(g:character)
+      let s:x_change = g:character.begins - s:col
+      let s:rtn = "\<Left>\<Del>\<Del>" . repeat(' ', s:x_change + 1)
     elseif g:current == "character"
-      let s:rtn = Transition(s:key)
+      call Element(g:transition)
+      let s:x_change = g:transition.begins - s:col
+      let s:rtn = repeat(' ', s:x_change) . ":\<Left>"
     elseif g:current == "transition"
-      let s:rtn = Action(s:key)
+      call Element(g:action)
+      let s:rtn = "\<Del>" . repeat("\<BS>", s:col - 1) . repeat(' ', g:action.begins - 1)
     endif
 
   return s:rtn 
 endfunction
 
 
-function! ScreenplayBackspacePressed()
-  let s:key = "backspace"
-  let s:cursorpos = CursorPos(".")
+fu! BackspacePressed()
   let s:linestart = LineStart(".")
-  let s:x_coord = col(".")
-   
-    if g:current == "transition"
-      let s:rtn = Transition(s:key)
-    elseif g:current == "character"
-      let s:rtn = Character(s:key)
-    elseif g:current == "parenthetical"
-      let s:rtn = Parenthetical(s:key)
-    elseif g:current == "dialogue"
-      let s:rtn = Dialogue(s:key)
-    elseif g:current == "action" || g:current == "scene"
-      if s:linestart > 0 && s:cursorpos != 11
-        let s:rtn = "\<BS>"
-      else
-        let s:rtn = repeat("\<BS>", s:x_coord)
-        let [s:newlinestart, s:newlineend, s:newline, s:nextline] = NewLineRange(".", "backspace")
-        if s:newlinestart <= 10
-          let s:rtn = s:rtn . repeat(" ", 10)
-        endif
-      endif
+  let s:lineend = LineEnd(".")
+  let s:col = col(".")
+
+  if s:linestart > 0
+    if g:current != "transition"
+      let s:rtn = "\<BS>"
+    else
+      let s:rtn = "\<BS>\<Esc>:s/^/ /\<CR>:let @/ =\"\"\<CR>A\<Left>"
     endif
 
+  else
+    if g:current == "transition"
+      call Element(g:transition)
+      let s:rtn = "\<Del>\<Esc>A" . repeat("\<BS>", 39)
+
+    elseif g:current == "character"    
+      call Element(g:character)
+      let s:rtn = repeat("\<BS>", 5) . "()\<left>"
+    
+    elseif g:current == "parenthetical"
+      call Element(g:parenthetical)
+      let s:emptyparens = search("\(\)", "ncp", line("."))
+      if s:emptyparens == 0
+        let s:x_change = s:col - g:dialogue.begins
+        let s:rtn = "\<Right>" . repeat("\<BS>", 7)
+      endif
+
+    elseif g:current == "dialogue"
+      call Element(g:dialogue)
+      let s:rtn = repeat("\<BS>", 10)
+
+    elseif g:current == "action" || g:current == "scene"
+      let s:rtn = repeat("\<BS>", s:col)
+      let [s:newlinestart, s:newlineend, s:newline, s:nextline] = NewLineRange(".", "backspace")
+      if s:newlinestart <= 10
+        let s:rtn = s:rtn . repeat(" ", g:action.begins - s:newlinestart)
+      endif
+
+    endif
+  endif
+
   return s:rtn
-endfunction
+endfu
 
 
-function! ScreenplayCtrlPPressed()
-  let [lnum, col] = searchpos('[^ ].*', 'bnc', line("."))
-
-  if col == 31
+function! CtrlPPressed()
+  let s:linestart = LineStart(".")
+  if s:linestart == 31
     set tw=55
     return "\<Esc>gq}i"
-  elseif col == 11
+  elseif s:linestart == 11
     set tw=70
     return "\<Esc>gq}i"
   endif
@@ -691,7 +480,7 @@ endfunction
 
 " This function allows a dropdown list to 
 " appear for character names at the top of DIALOG
-function! ScreenplayCompleteCharacterName(findstart, base)
+function! CompleteCharacterName(findstart, base)
   if a:findstart
     " locate the start of the word
     let line = getline('.')
@@ -737,9 +526,9 @@ function! ScreenplayCompleteCharacterName(findstart, base)
     return res
   endif
 endfun
-set completefunc=ScreenplayCompleteCharacterName
+set completefunc=CompleteCharacterName
 
 if !exists("g:current")
   let g:current = "action"
-  call Action("none")
+  call Element(g:action)
 endif
