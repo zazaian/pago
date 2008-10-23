@@ -4,7 +4,6 @@
 " Version:      0.1.3
 " Updated:      2008-10-19
 " Maintainer:   Mike Zazaian, mike@zop.io, http://zop.io
-" Originator:   Alex Lance, alla at cyber.com.au
 " License:      This file is placed in the public domain.
 "
 " Pago allows the use of vim as a fully-functional piece of screenwritng
@@ -224,6 +223,55 @@ function! ToggleCase(new_case)
 endfunction
 
 
+
+" Line Length and Cursor Position Functions
+fu! LineStart(line_num)
+  let [s:lnum, s:linestart] = searchpos("[^ ].*", "bnc", line(a:line_num))
+  return s:linestart
+endfu
+
+fu! LineEnd(line_num)
+  let [s:lnum, s:endline] = searchpos("$", "nc", line(a:line_num))
+  return s:endline
+endfu
+
+fu! ColonPos(line_num)
+  let [s:lnum, s:colonpos] = searchpos(":", "nc", line(a:line_num))
+  return s:colonpos
+endfu
+
+fu! ColonEnd(line_num)
+  let s:colonend = search(":$", "nc", line(a:line_num))
+  return s:colonend
+endfu
+
+fu! CursorPos(line_num)
+    let [s:buffer, s:lnum, s:cursorpos, s:off] = getpos(a:line_num)
+    return s:cursorpos
+endfu
+
+fu! LowerChars(line_num)
+  let s:lowerchars = search("[a-z]", "nc", line(a:line_num))
+  return s:lowerchars
+endfu
+
+
+fu! NewLineRange(line_num, key_pressed)
+  let s:newline = line(a:line_num)
+
+  if a:key_pressed == "up" || a:key_pressed == "backspace"
+    let s:nextline = s:newline - 1
+  elseif a:key_pressed == "down"
+    let s:nextline = s:newline + 1
+  endif
+
+  let s:newlinestart = LineStart(s:newline)
+  let s:newlineend = LineEnd(s:newline)
+  let s:newlinerange = [s:newlinestart, s:newlineend, s:newline, s:nextline]
+  return s:newlinerange
+endfu
+
+
 fu! ElementHelper(begins, ends, case)
   
   if g:current == "scene"
@@ -244,14 +292,8 @@ fu! ElementHelper(begins, ends, case)
 
 endfu
 
-fu! ElementDetect(direction)
 
-  " Check if new line is empty.  If so, move on to next line before detecting
-  " element
-  let [s:newlinestart, s:newlineend, s:newline, s:nextline] = NewLineRange(".", a:direction)
-  if s:newlinestart == 11 && s:newlineend == 11
-    call cursor(s:nextline, col("$"))
-  endif
+fu! ElementDetect(direction)
 
   " Detect indent of new line
   let s:indent = indent(line("."))
@@ -260,11 +302,18 @@ fu! ElementDetect(direction)
   let s:lowerchars = LowerChars(".")
   let s:chars = LineStart(".")
   let s:x_coord = col(".")
+  let [s:newlinestart, s:newlineend, s:newline, s:nextline] = NewLineRange(".", a:direction)
 
+  " if s:newlinestart == 11 && s:newlineend == 11
+    " call cursor(s:nextline, col("$"))
   if s:colon != 70 && s:colonend < 1 
-    if s:indent < 10 
-      return repeat("\<BS>", s:x_coord - 1) . repeat(' ', 10)
-    elseif s:indent == 10
+    if a:direction != "up" && a:direction != "down"
+      if s:indent < 10 
+        return repeat("\<BS>", s:x_coord - 1) . repeat(' ', 10)
+      endif
+    endif
+
+    if s:indent == 10
       " Check whether the line is a SCENE element
       let s:n = search('^[ ].*[INT|EXT]\.', 'bncp', line("."))
       " Check whether there are any lowercase characters on the line
@@ -272,6 +321,8 @@ fu! ElementDetect(direction)
       if s:n > 0 && s:l < 1
         call Scene(a:direction)
       else
+        " Check if new line is empty.  If so, move on to next line before detecting
+        " element
         call Action(a:direction)
       endif
     elseif s:indent == 20 
@@ -285,60 +336,9 @@ fu! ElementDetect(direction)
     call Transition(a:direction)
   else
     call Action(a:direction)
-  endif
-
-  return ''
-
- 
+  endif 
+  return '' 
 endfu
-
-" Line Length and Cursor Position Functions
-fu! LineStart(line_num)
-  let [s:lnum, s:linestart] = searchpos("[^ ].*", "bnc", line(a:line_num))
-  return s:linestart
-endfu
-
-fu! LineEnd(line_num)
-  let [s:lnum, s:endline] = searchpos("$", "nc", line(a:line_num))
-  return s:endline
-endfu
-
-fu! ColonPos(line_num)
-  let [s:lnum, s:colonpos] = searchpos(":", "enc", line(a:line_num))
-  return s:colonpos
-endfu
-
-fu! ColonEnd(line_num)
-  let s:colonend = search(":$", "enc", line(a:line_num))
-  return s:colonend
-endfu
-
-fu! CursorPos(line_num)
-    let [s:buffer, s:lnum, s:cursorpos, s:off] = getpos(a:line_num)
-    return s:cursorpos
-endfu
-
-fu! LowerChars(line_num)
-  let s:lowerchars = search("[a-z]", "enc", line(a:line_num))
-  return s:lowerchars
-endfu
-
-
-fu! NewLineRange(line_num, key_pressed)
-  let s:newline = line(a:line_num)
-
-  if a:key_pressed == "up" || a:key_pressed == "backspace"
-    let s:nextline = s:newline - 1
-  elseif a:key_pressed == "down"
-    let s:nextline = s:newline + 1
-  endif
-
-  let s:newlinestart = LineStart(s:newline)
-  let s:newlineend = LineEnd(s:newline)
-  let s:newlinerange = [s:newlinestart, s:newlineend, s:newline, s:nextline]
-  return s:newlinerange
-endfu
-
 
 " End Line Length and Cursor Position Functions
 
@@ -388,37 +388,22 @@ fu! SceneStart()
 endfu
 
 
-" 
-" fu! BackspaceAdjust()
-"   let s:linestart = LineStart(".")
-"   let s:colonpos = ColonPos(".")
-"   let s:endline = LineEnd(".")
-"   let s:x_coord = col(".")
-" 
-"   if s:linestart == 0
-"   elseif s:linestart == 11
-"     let s:rtn = Action("none")
-"   elseif s:linestart == 21
-"     let s:rtn = Dialogue("none")
-"   elseif s:linestart == 26
-"     let s:rtn = Parenthetical("none")
-"   elseif s:linestart == 31
-"     let s:rtn = Character("none")
-"   elseif s:colonpos == 70
-"     let s:rtn = Transition("none")
-"   endif
-" 
-"   call cursor(line("."), s:endline)
-"   return s:rtn
-" endfu
-
-
 let scene = { 'name': 'scene', 'begins': 11, 'ends': 70, 'case': 'upper', 'align': 'L' }
 let action = { 'name': 'action', 'begins': 11, 'ends': 70, 'case': 'lower', 'align': 'L' }
 let dialogue = { 'name': 'dialogue', 'begins': 21, 'ends': 55, 'case': 'lower', 'align': 'L' }
 let parenthetical = { 'name': 'parenthetical', 'begins': 21, 'ends': 55, 'case': 'lower', 'align': 'L' }
 let character = { 'name': 'character', 'begins': 31, 'ends': 70, 'case': 'upper', 'align': 'L' }
 let transition = { 'name': 'transition', 'begins': 70, 'ends': 11, 'case': 'upper', 'align': 'R' }
+
+let elements = ['scene', 'action', 'dialogue', 'parenthetical', 'character', 'transition']
+let element = {}
+for i in elements
+  exe "let element." . i . " = " . i
+endfor
+
+
+fu! Element(element)
+endfu
 
 fu! Scene(key_pressed)
   let g:current = "scene"
@@ -441,8 +426,8 @@ fu! Scene(key_pressed)
     let s:rtn = "\<Enter>"
   else
     let s:rtn = ""
-    let s:endline = LineEnd(".")
-    call cursor(line("."), s:endline)
+    " let s:endline = LineEnd(".")
+    " call cursor(line("."), s:endline)
   endif
 
   return s:rtn
@@ -481,8 +466,8 @@ fu! Action(key_pressed)
     endif
   elseif a:key_pressed != "backspace"
     let s:rtn = ""
-    let s:endline = LineEnd(".")
-    call cursor(line("."), s:endline)
+    " let s:endline = LineEnd(".")
+    " call cursor(line("."), s:endline)
   endif
 
   return s:rtn
@@ -517,8 +502,8 @@ fu! Dialogue(key_pressed)
     endif
   else
     let s:rtn = ""
-    let s:endline = LineEnd(".")
-    call cursor(line("."), s:endline)
+    " let s:endline = LineEnd(".")
+    " call cursor(line("."), s:endline)
   endif
 
   return s:rtn
@@ -554,8 +539,8 @@ fu! Parenthetical(key_pressed)
     endif
   else
     let s:rtn = ""
-    let s:endline = LineEnd(".")
-    call cursor(line("."), s:endline)
+    " let s:endline = LineEnd(".")
+    " call cursor(line("."), s:endline)
   endif
 
   return s:rtn
@@ -583,8 +568,8 @@ fu! Character(key_pressed)
     let s:rtn = "\<CR>\<CR>\<Esc>I".repeat(' ', s:begins - 1)
   else
     let s:rtn = ""
-    let s:endline = LineEnd(".")
-    call cursor(line("."), s:endline)
+    " let s:endline = LineEnd(".")
+    " call cursor(line("."), s:endline)
   endif
 
   return s:rtn
@@ -613,8 +598,8 @@ fu! Transition(key_pressed)
     endif
   else
     let s:rtn = ""
-    let s:endline = LineEnd(".")
-    call cursor(line("."), s:endline)
+    " let s:endline = LineEnd(".")
+    " call cursor(line("."), s:endline)
   endif
 
   return s:rtn
