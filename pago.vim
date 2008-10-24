@@ -1,8 +1,8 @@
 "
 " Pago
 " screenwriting for vim
-" Version:      0.2.0
-" Updated:      2008-10-23
+" Version:      0.2.1
+" Updated:      2008-10-24
 " Maintainer:   Mike Zazaian, mike@zop.io, http://zop.io
 " License:      This file is placed in the public domain.
 "
@@ -337,8 +337,6 @@ fu! Element(element)
     let s:textwrap = a:element.ends
   endif
 
-  call cursor(line("."), a:element.ends)
-
   exe "set tw=" . s:textwrap
   call ToggleCase(a:element.case)
   
@@ -351,6 +349,7 @@ endfu
 fu! EnterPressed()
   let s:linestart = LineStart(".")
   let s:lineend = LineEnd(".")
+  let s:col = col(".")
   
   if g:current == "scene" || g:current == "action"
     call Element(g:action)
@@ -376,14 +375,19 @@ fu! EnterPressed()
     call Element(g:character)
     let s:rtn = "\<CR>\<CR>\<Esc>I".repeat(' ', g:character.begins - 1)
 
-  elseif g:current == "parenthetical" || g:current == "character"
-    call Element(g:dialogue)
-    " call cursor(line("."), s:lineend)
+  elseif g:current == "parenthetical"
+    call Element(g:dialogue) 
+    call cursor(line("."), s:lineend)
+    let s:rtn = "\<CR>\<Esc>I".repeat(' ', g:dialogue.begins - 1)
+
+  elseif g:current == "character"
+    call Element(g:dialogue) 
     let s:rtn = "\<CR>\<Esc>I".repeat(' ', g:dialogue.begins - 1)
 
   elseif g:current == "transition"
     call Element(g:scene)
-    let s:rtn = "\<CR>"
+    call cursor(line("."), s:lineend)
+    let s:rtn = "\<CR>\<CR>\<Esc>i" . repeat(" ", g:action.begins - 1)
   endif
 
   return s:rtn
@@ -391,31 +395,35 @@ endfu
 
 
 function! TabPressed()
-  let s:key = "tab"
   let s:col = col(".")
   
     if g:current == "action" || g:current == "scene"
-      call Element(g:dialogue)
-      let s:x_change = g:dialogue.begins - s:col
+      let e = g:dialogue
+      let s:x_change = e.begins - s:col
       let s:rtn = repeat(' ', s:x_change)
+
     elseif g:current == "dialogue"
-      call Element(g:parenthetical)
-      let s:x_change = g:parenthetical.begins - s:col
+      let e = g:parenthetical
+      let s:x_change = e.begins - s:col
       let s:rtn = repeat(' ', s:x_change) . "()\<Left>"
+    
     elseif g:current == "parenthetical"
-      call Element(g:character)
-      let s:x_change = g:character.begins - s:col
+      let e = g:character
+      let s:x_change = e.begins - s:col
       let s:rtn = "\<Left>\<Del>\<Del>" . repeat(' ', s:x_change + 1)
+    
     elseif g:current == "character"
-      call Element(g:transition)
-      let s:x_change = g:transition.begins - s:col
+      let e = g:transition
+      let s:x_change = e.begins - s:col
       let s:rtn = repeat(' ', s:x_change) . ":\<Left>"
+    
     elseif g:current == "transition"
-      call Element(g:action)
-      let s:rtn = "\<Del>" . repeat("\<BS>", s:col - 1) . repeat(' ', g:action.begins - 1)
+      let e = g:action
+      let s:rtn = "\<Del>" . repeat("\<BS>", s:col - 1) . repeat(' ', e.begins - 1)
     endif
 
-  return s:rtn 
+  call Element(e)
+  return s:rtn
 endfunction
 
 
@@ -425,10 +433,12 @@ fu! BackspacePressed()
   let s:col = col(".")
 
   if s:linestart > 0
-    if g:current != "transition"
-      let s:rtn = "\<BS>"
-    else
+    if g:current == "transition"
       let s:rtn = "\<BS>\<Esc>:s/^/ /\<CR>:let @/ =\"\"\<CR>A\<Left>"
+    elseif g:current == "parenthetical"
+      let [s:lnum, s:openparen] = searchpos("(", "nc", line("."))
+      call cursor(line("."), s:openparen)
+      let s:rtn = "\<Del>\<Del>" . repeat("\<BS>", s:col - g:dialogue.begins)
     endif
 
   else
@@ -442,10 +452,10 @@ fu! BackspacePressed()
     
     elseif g:current == "parenthetical"
       call Element(g:parenthetical)
-      let s:emptyparens = search("\(\)", "ncp", line("."))
+      let s:emptyparens = search("()", "ncp", line("."))
       if s:emptyparens == 0
         let s:x_change = s:col - g:dialogue.begins
-        let s:rtn = "\<Right>" . repeat("\<BS>", 7)
+        let s:rtn = "\<Right>" . repeat("\<BS>", s:x_change)
       endif
 
     elseif g:current == "dialogue"
@@ -453,11 +463,7 @@ fu! BackspacePressed()
       let s:rtn = repeat("\<BS>", 10)
 
     elseif g:current == "action" || g:current == "scene"
-      let s:rtn = repeat("\<BS>", s:col)
-      let [s:newlinestart, s:newlineend, s:newline, s:nextline] = NewLineRange(".", "backspace")
-      if s:newlinestart <= 10
-        let s:rtn = s:rtn . repeat(" ", g:action.begins - s:newlinestart)
-      endif
+      let s:rtn = repeat("\<BS>", s:col) . repeat(" ", g:action.begins - 1)
 
     endif
   endif
@@ -528,7 +534,13 @@ function! CompleteCharacterName(findstart, base)
 endfun
 set completefunc=CompleteCharacterName
 
-if !exists("g:current")
-  let g:current = "action"
-  call Element(g:action)
-endif
+fu! Start()
+  if !exists("g:current")
+    let g:current = "action"
+    call Element(g:action)
+    return "i" . repeat(" ", 10)
+  endif
+endfu
+
+let s:start = Start()
+exe s:start
