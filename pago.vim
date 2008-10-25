@@ -1,8 +1,8 @@
 "
 " Pago
 " screenwriting for vim
-" Version:      0.2.3
-" Updated:      2008-10-24
+" Version:      0.2.4
+" Updated:      2008-10-25
 " Maintainer:   Mike Zazaian, mike@zop.io, http://zop.io
 " License:      This file is placed in the public domain.
 "
@@ -347,9 +347,13 @@ fu! Element(element)
 
   exe "set tw=" . s:textwrap
   call ToggleCase(a:element.case)
+
+  " Page Number
+  let pageInt = (line(".") / 56) + 1
+  let g:page = "PAGE " . pageInt
   
   let g:statustxt = toupper(g:current)
-  set statusline=%<[%02n]\ %F%(\ %m%h%w%y%r%)\ %{g:statustxt}\ %a%=\ %8l,%c%V/%L\ (%P)\ [%08O:%02B]
+  set statusline=%<[%02n]\ %F%(\ %m%h%w%y%r%)\ %{g:page}\ \-\ %{g:statustxt}\ %a%=\ %8l,%c%V/%L\ (%P)\ [%08O:%02B]
 
   return ''
 endfu
@@ -487,7 +491,12 @@ fu! BackspacePressed()
 
   elseif g:current == "action" || g:current == "scene"
     if s:screenchars == 0
+      let backspaces = "\<BS>"
+      let s:nextindent = indent(s:nextline)
       if s:newindent < g:action.begins - 1
+        if s:nextindent < g:action.begins - 1
+        endif
+
         let s:trail = repeat(' ', g:action.begins - 1)
       else
         let s:trail = ""
@@ -570,6 +579,20 @@ fu! Start()
     call Element(g:action)
     return "i" . repeat(" ", 10)
   endif
+
+  let s:lastline = line(".")
+  let s:emptylines = []
+
+  for i in range(1, s:lastline)
+    if indent(i) == 0
+      let s:emptylines += [i]
+    endif
+  endfor
+
+  for i in s:emptylines
+    call substitute(i, "^", "          ", "g")
+  endfor
+
 endfu
 
 call Start()
