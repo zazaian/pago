@@ -1,7 +1,7 @@
 "
 " Pago
 " screenwriting for vim
-" Version:      0.2.2
+" Version:      0.2.3
 " Updated:      2008-10-24
 " Maintainer:   Mike Zazaian, mike@zop.io, http://zop.io
 " License:      This file is placed in the public domain.
@@ -84,7 +84,7 @@ let g:counter = []
 imap <CR> <C-R>=EnterPressed()<CR>
 imap <TAB> <C-R>=TabPressed()<CR>
 imap <BS> <C-R>=BackspacePressed()<CR><C-R>=ElementDetect("backspace")<CR>
-imap  <C-R>=BackspacePressed()<CR>
+imap  <C-R>=BackspacePressed()<CR><C-R>=ElementDetect("backspace")<CR>
 ino <Up> <Up><C-R>=ElementDetect("up")<CR>
 ino <Down> <Down><C-R>=ElementDetect("down")<CR>
 " no <Insert> <Insert><C-R>=ElementDetect("insert")<CR>
@@ -263,18 +263,6 @@ fu! ElementDetect(direction)
     " call cursor(s:nextline, col("$"))
   if s:colon != 70 && s:colonend < 1 
     
-    if a:direction != "up" && a:direction != "down"
-      if s:indent < 10
-        if s:newindent < 10
-          let s:trail = repeat(' ', g:action.begins - 1)
-        else
-          let s:trail = ""
-        endif
-        return repeat("\<BS>", s:x_coord) . s:trail
-      endif
-    endif
-
-
     if s:indent == 10
       " Check whether the line is a SCENE element
       let s:n = search('^[ ].*[INT|EXT]\.', 'bncp', line("."))
@@ -462,53 +450,51 @@ fu! BackspacePressed()
   let s:linestart = LineStart(".")
   let s:lineend = LineEnd(".")
   let s:screenchars = ScreenChars(".")
+  let s:indent = indent(".")
   let s:col = col(".")
   let [s:newlinestart, s:newindent, s:newchars, s:newlineend, s:newline, s:nextline] = NewLineRange(".", "up")
 
-  if s:linestart > 0
-    if g:current == "transition"
-      if s:screenchars == 0
-        let s:rtn = "\<Del>" . repeat("\<BS>", s:col - g:character.begins)
-      else
-        let s:rtn = "\<BS>\<Esc>:s/^/ /\<CR>:let @/ =\"\"\<CR>A\<Left>"
-      endif
-    elseif g:current == "parenthetical"
+  let s:rtn = "\<BS>"
+
+  if g:current == "transition"
+    if s:screenchars == 0
+      let s:rtn = "\<Del>" . repeat("\<BS>", s:col - g:character.begins)
+    else
+      let s:rtn = "\<BS>\<Esc>:s/^/ /\<CR>:let @/ =\"\"\<CR>A\<Left>"
+    endif
+    call Element(g:transition)
+    "let s:rtn = "\<Del>\<Esc>A" . repeat("\<BS>", 39)
+
+  elseif g:current == "character"    
+    call Element(g:character)
+    if s:screenchars == 0
+      let s:rtn = repeat("\<BS>", 5) . "()\<left>"
+    endif
+
+  elseif g:current == "parenthetical"
+    call Element(g:parenthetical)
+    if s:screenchars == 0
       let [s:lnum, s:openparen] = searchpos("(", "nc", line("."))
       call cursor(line("."), s:openparen)
       let s:rtn = "\<Del>\<Del>" . repeat("\<BS>", s:col - g:dialogue.begins)
-    else
-      let s:rtn = "\<BS>"
     endif
 
-  else
-    if g:current == "transition"
-      call Element(g:transition)
-      let s:rtn = "\<Del>\<Esc>A" . repeat("\<BS>", 39)
-
-    elseif g:current == "character"    
-      call Element(g:character)
-      let s:rtn = repeat("\<BS>", 5) . "()\<left>"
-    
-    elseif g:current == "parenthetical"
-      call Element(g:parenthetical)
-      let s:emptyparens = search("()", "ncp", line("."))
-      if s:emptyparens == 0
-        let s:x_change = s:col - g:dialogue.begins
-        let s:rtn = "\<Right>" . repeat("\<BS>", s:x_change)
-      endif
-
-    elseif g:current == "dialogue"
-      call Element(g:dialogue)
+  elseif g:current == "dialogue"
+    call Element(g:dialogue)
+    if s:screenchars == 0
       let s:rtn = repeat("\<BS>", 10)
-
-    elseif g:current == "action" || g:current == "scene"
-      if s:newchars == 0
-        let s:rtn = repeat("\<BS>", s:col) . repeat(" ", g:action.begins - 1)
-      else
-        let s:rtn = repeat("\<BS>", s:col)
-      endif
-
     endif
+
+  elseif g:current == "action" || g:current == "scene"
+    if s:screenchars == 0
+      if s:newindent < g:action.begins - 1
+        let s:trail = repeat(' ', g:action.begins - 1)
+      else
+        let s:trail = ""
+      endif
+      let s:rtn = repeat("\<BS>", s:col) . s:trail
+    endif
+
   endif
 
   return s:rtn
@@ -526,6 +512,7 @@ function! CtrlPPressed()
   endif
   return "\<Esc>gq}i"
 endfunction
+
 
 " This function allows a dropdown list to 
 " appear for character names at the top of DIALOG
