@@ -1,7 +1,7 @@
 "
 " Pago
 " screenwriting for vim
-" Version:      0.2.1
+" Version:      0.2.2
 " Updated:      2008-10-24
 " Maintainer:   Mike Zazaian, mike@zop.io, http://zop.io
 " License:      This file is placed in the public domain.
@@ -136,7 +136,7 @@ let g:alphaall = g:alphalower + g:alphaupper
 let g:otherkeys = ['<Space>','!','.','-','?']
 
 " Definition of Accepted Screenplay Characters
-let g:screenchars = "[A-Za-z_0-9\?\!\.\-]"
+let g:screenchars = '[A-Za-z_0-9\?\!\.\-]'
 let g:emptyline = "[^ ].*"
 
 fu! MapUppercase()  
@@ -219,20 +219,33 @@ fu! LowerChars(line_num)
   return s:lowerchars
 endfu
 
+fu! HasChars(line_num)
+  let s:result = search("\([A-Z]\)\|\([a-z]\)\|\([A-Za-z_0-9]\)", "bncp", line(a:line_num))
+  return s:result
+endfu
 
-fu! NewLineRange(line_num, key_pressed)
-  let s:newline = line(a:line_num)
+fu! ScreenChars(line_num)
+  let s:result = search(g:screenchars, "bncp", line(a:line_num))
+  return s:result
+endfu
 
-  if a:key_pressed == "up" || a:key_pressed == "backspace"
+
+fu! NewLineRange(line_num, direction)
+  let s:thisline = line(a:line_num)
+
+  if a:direction == "up"
+    let s:newline = s:thisline - 1
     let s:nextline = s:newline - 1
-  elseif a:key_pressed == "down"
+  elseif a:direction == "down"
+    let s:newline = s:thisline + 1
     let s:nextline = s:newline + 1
   endif
 
   let s:newlinestart = LineStart(s:newline)
   let s:newlineend = LineEnd(s:newline)
-  let s:newlinerange = [s:newlinestart, s:newlineend, s:newline, s:nextline]
-  return s:newlinerange
+  let s:newindent = indent(s:newline)
+  let s:newchars = ScreenChars(s:newline)
+  return [s:newlinestart, s:newindent, s:newchars, s:newlineend, s:newline, s:nextline]
 endfu
 
 fu! ElementDetect(direction)
@@ -244,22 +257,29 @@ fu! ElementDetect(direction)
   let s:lowerchars = LowerChars(".")
   let s:chars = LineStart(".")
   let s:x_coord = col(".")
-  let [s:newlinestart, s:newlineend, s:newline, s:nextline] = NewLineRange(".", a:direction)
+  let [s:newlinestart, s:newindent, s:newchars, s:newlineend, s:newline, s:nextline] = NewLineRange(".", "up")
 
   " if s:newlinestart == 11 && s:newlineend == 11
     " call cursor(s:nextline, col("$"))
   if s:colon != 70 && s:colonend < 1 
+    
     if a:direction != "up" && a:direction != "down"
-      if s:indent < 10 
-        return repeat("\<BS>", s:x_coord - 1) . repeat(' ', 10)
+      if s:indent < 10
+        if s:newindent < 10
+          let s:trail = repeat(' ', g:action.begins - 1)
+        else
+          let s:trail = ""
+        endif
+        return repeat("\<BS>", s:x_coord) . s:trail
       endif
     endif
+
 
     if s:indent == 10
       " Check whether the line is a SCENE element
       let s:n = search('^[ ].*[INT|EXT]\.', 'bncp', line("."))
       " Check whether there are any lowercase characters on the line
-      let s:l = search('[a-z]', 'ncp', line("."))
+      let s:l = LowerChars(".")
       if s:n > 0 && s:l < 1
         call Element(g:scene)
       else
@@ -381,13 +401,24 @@ fu! EnterPressed()
     let s:rtn = "\<CR>\<Esc>I".repeat(' ', g:dialogue.begins - 1)
 
   elseif g:current == "character"
-    call Element(g:dialogue) 
-    let s:rtn = "\<CR>\<Esc>I".repeat(' ', g:dialogue.begins - 1)
+    if s:linestart < 1
+      let s:rtn = repeat("\<BS>", s:col - g:action.begins)
+      call Element(g:action)
+    else
+      let s:rtn = "\<CR>\<Esc>I".repeat(' ', g:dialogue.begins - 1)
+      call Element(g:dialogue)
+    endif
 
   elseif g:current == "transition"
     call Element(g:scene)
     call cursor(line("."), s:lineend)
-    let s:rtn = "\<CR>\<CR>\<Esc>i" . repeat(" ", g:action.begins - 1)
+    let screenchars = ScreenChars(".")
+    if screenchars == 0
+      let s:append = "\<Left>\<Del>"
+    else
+      let s:append = ""
+    endif
+    let s:rtn = s:append . "\<CR>\<CR>\<Esc>i" . repeat(" ", g:action.begins - 1)
   endif
 
   return s:rtn
@@ -430,15 +461,23 @@ endfunction
 fu! BackspacePressed()
   let s:linestart = LineStart(".")
   let s:lineend = LineEnd(".")
+  let s:screenchars = ScreenChars(".")
   let s:col = col(".")
+  let [s:newlinestart, s:newindent, s:newchars, s:newlineend, s:newline, s:nextline] = NewLineRange(".", "up")
 
   if s:linestart > 0
     if g:current == "transition"
-      let s:rtn = "\<BS>\<Esc>:s/^/ /\<CR>:let @/ =\"\"\<CR>A\<Left>"
+      if s:screenchars == 0
+        let s:rtn = "\<Del>" . repeat("\<BS>", s:col - g:character.begins)
+      else
+        let s:rtn = "\<BS>\<Esc>:s/^/ /\<CR>:let @/ =\"\"\<CR>A\<Left>"
+      endif
     elseif g:current == "parenthetical"
       let [s:lnum, s:openparen] = searchpos("(", "nc", line("."))
       call cursor(line("."), s:openparen)
       let s:rtn = "\<Del>\<Del>" . repeat("\<BS>", s:col - g:dialogue.begins)
+    else
+      let s:rtn = "\<BS>"
     endif
 
   else
@@ -463,7 +502,11 @@ fu! BackspacePressed()
       let s:rtn = repeat("\<BS>", 10)
 
     elseif g:current == "action" || g:current == "scene"
-      let s:rtn = repeat("\<BS>", s:col) . repeat(" ", g:action.begins - 1)
+      if s:newchars == 0
+        let s:rtn = repeat("\<BS>", s:col) . repeat(" ", g:action.begins - 1)
+      else
+        let s:rtn = repeat("\<BS>", s:col)
+      endif
 
     endif
   endif
@@ -542,5 +585,4 @@ fu! Start()
   endif
 endfu
 
-let s:start = Start()
-exe s:start
+call Start()
