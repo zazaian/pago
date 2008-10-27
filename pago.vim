@@ -1,8 +1,8 @@
 "
 " Pago
 " screenwriting for vim
-" Version:      0.2.4
-" Updated:      2008-10-25
+" Version:      0.2.6
+" Updated:      2008-10-26
 " Maintainer:   Mike Zazaian, mike@zop.io, http://zop.io
 " License:      This file is placed in the public domain.
 "
@@ -461,50 +461,41 @@ fu! BackspacePressed()
 
   let s:rtn = "\<BS>"
 
-  if g:current == "transition"
-    if s:screenchars == 0
+  if s:screenchars == 0
+    if g:current == "transition"
       let s:rtn = "\<Del>" . repeat("\<BS>", s:col - g:character.begins)
-    else
-      let s:rtn = "\<BS>\<Esc>:s/^/ /\<CR>:let @/ =\"\"\<CR>A\<Left>"
-    endif
-    call Element(g:transition)
-    "let s:rtn = "\<Del>\<Esc>A" . repeat("\<BS>", 39)
-
-  elseif g:current == "character"    
-    call Element(g:character)
-    if s:screenchars == 0
+  
+    elseif g:current == "character"    
       let s:rtn = repeat("\<BS>", 5) . "()\<left>"
-    endif
-
-  elseif g:current == "parenthetical"
-    call Element(g:parenthetical)
-    if s:screenchars == 0
+  
+    elseif g:current == "parenthetical"
       let [s:lnum, s:openparen] = searchpos("(", "nc", line("."))
       call cursor(line("."), s:openparen)
       let s:rtn = "\<Del>\<Del>" . repeat("\<BS>", s:col - g:dialogue.begins)
-    endif
-
-  elseif g:current == "dialogue"
-    call Element(g:dialogue)
-    if s:screenchars == 0
+  
+    elseif g:current == "dialogue"
       let s:rtn = repeat("\<BS>", 10)
-    endif
 
-  elseif g:current == "action" || g:current == "scene"
-    if s:screenchars == 0
-      let backspaces = "\<BS>"
+    elseif g:current == "action" || g:current == "scene"
+      let backspaces = s:col
       let s:nextindent = indent(s:nextline)
       if s:newindent < g:action.begins - 1
+        let backspaces += 1
         if s:nextindent < g:action.begins - 1
+          let s:trail = repeat(' ', g:action.begins - 1) 
+        else
+          let s:trail = ""
         endif
-
-        let s:trail = repeat(' ', g:action.begins - 1)
       else
         let s:trail = ""
       endif
-      let s:rtn = repeat("\<BS>", s:col) . s:trail
+      let s:rtn = repeat("\<BS>", backspaces) . s:trail
+  
     endif
-
+  else
+    if g:current == "transition"
+      let s:rtn = "\<BS>\<Esc>:s/^/ /\<CR>:let @/ =\"\"\<CR>A\<Left>"
+    endif
   endif
 
   return s:rtn
