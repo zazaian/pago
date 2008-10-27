@@ -376,6 +376,7 @@ fu! EnterPressed()
       let s:rtn = ""
       if g:previous == "action"
         call Element(g:scene)
+        let g:switch = 1
       endif
       if g:switch == 2
         let s:rtn = "\<CR>\<CR>"
@@ -585,7 +586,7 @@ fu! Start()
 
   for i in range(1, s:lastline)
     if indent(i) == 0
-      let s:emptylines += [i]
+      let s:emptylines = s:emptylines + [i]
     endif
   endfor
 
