@@ -1,8 +1,8 @@
 "
 " Pago
 " screenwriting for vim
-" Version:      0.2.6
-" Updated:      2008-10-26
+" Version:      0.2.7
+" Updated:      2008-11-04
 " Maintainer:   Mike Zazaian, mike@zop.io, http://zop.io
 " License:      This file is placed in the public domain.
 "
@@ -83,13 +83,19 @@ let g:counter = []
 " Three listeners: Enter, Tab and Backspace
 imap <CR> <C-R>=EnterPressed()<CR>
 imap <TAB> <C-R>=TabPressed()<CR>
-imap <BS> <C-R>=BackspacePressed()<CR><C-R>=ElementDetect("backspace")<CR>
-imap  <C-R>=BackspacePressed()<CR><C-R>=ElementDetect("backspace")<CR>
-ino <Up> <Up><C-R>=ElementDetect("up")<CR>
-ino <Down> <Down><C-R>=ElementDetect("down")<CR>
-" no <Insert> <Insert><C-R>=ElementDetect("insert")<CR>
-no <Up> <Insert><Up><C-R>=ElementDetect("up")<CR><Esc>
-no <Down> <Insert><Down><C-R>=ElementDetect("down")<CR><Esc>
+imap <BS> <C-R>=BackspacePressed()<CR><C-R>=ElementDetect()<CR>
+imap  <C-R>=BackspacePressed()<CR><C-R>=ElementDetect()<CR>
+
+ino <Up> <C-R>=DirectionPressed("up")<CR>
+ino <Down> <C-R>=DirectionPressed("down")<CR>
+ino <Left> <C-R>=DirectionPressed("left")<CR>
+ino <Right> <C-R>=DirectionPressed("right")<CR>
+
+no <Up> <Insert><C-R>=DirectionPressed("up")<CR><Esc>
+no <Down> <Insert><C-R>=DirectionPressed("down")<CR><Esc>
+no <Left> <Insert><C-R>=DirectionPressed("left")<CR><Esc>
+no <Right> <Insert><C-R>=DirectionPressed("right")<CR><Esc>
+
 
 ino <Space> <Space><C-R>=SceneStart()<CR><Esc>
 no <Space> <Space><C-R>=SceneStart()<CR><Esc>
@@ -154,12 +160,11 @@ fu! MapUppercase()
     let key1 = key
     let key2 = key
 
-    if g:current == "scene"
+    if g:current == "scene" && key == "<Space>"
       let g:premap = "<C-R>=SceneStart()<CR>"
       let key2 = ""
     else
-      let g:premap = g:premap
-      let key2 = key2
+      let g:premap = ""
     endif
 
     exe "ino " . key1 . " " . g:premap . key2
@@ -170,7 +175,11 @@ endfu
 
 fu! UnmapUppercase()
   for n in g:alphaall
-    execute "ino " . n . " " . n
+    exe "ino " . n . " " . n
+  endfor
+
+  for n in g:otherkeys
+    exe "ino " . n . " " . n
   endfor
 
   return ""
@@ -233,10 +242,10 @@ endfu
 fu! NewLineRange(line_num, direction)
   let s:thisline = line(a:line_num)
 
-  if a:direction == "up"
+  if a:direction == "up" || a:direction == "left"
     let s:newline = s:thisline - 1
     let s:nextline = s:newline - 1
-  elseif a:direction == "down"
+  elseif a:direction == "down" || a:direction == "right"
     let s:newline = s:thisline + 1
     let s:nextline = s:newline + 1
   endif
@@ -248,7 +257,7 @@ fu! NewLineRange(line_num, direction)
   return [s:newlinestart, s:newindent, s:newchars, s:newlineend, s:newline, s:nextline]
 endfu
 
-fu! ElementDetect(direction)
+fu! ElementDetect()
 
   " Detect indent of new line
   let s:indent = indent(line("."))
@@ -257,10 +266,7 @@ fu! ElementDetect(direction)
   let s:lowerchars = LowerChars(".")
   let s:chars = LineStart(".")
   let s:x_coord = col(".")
-  let [s:newlinestart, s:newindent, s:newchars, s:newlineend, s:newline, s:nextline] = NewLineRange(".", "up")
 
-  " if s:newlinestart == 11 && s:newlineend == 11
-    " call cursor(s:nextline, col("$"))
   if s:colon != 70 && s:colonend < 1 
     
     if s:indent == 10
@@ -492,13 +498,47 @@ fu! BackspacePressed()
       let s:rtn = repeat("\<BS>", backspaces) . s:trail
   
     endif
-  else
-    if g:current == "transition"
-      let s:rtn = "\<BS>\<Esc>:s/^/ /\<CR>:let @/ =\"\"\<CR>A\<Left>"
-    endif
+  elseif g:current == "transition"
+    let s:rtn = "\<BS>\<Esc>:s/^/ /\<CR>:let @/ =\"\"\<CR>A\<Left>"
   endif
 
   return s:rtn
+endfu
+
+fu! DirectionPressed(dir)
+  exe "let key = \"\\\<" . a:dir . ">\""
+  let thisline = line(".")
+  let thisindent = indent(".")
+  let col = col(".")
+  let [s:newlinestart, s:newindent, s:newchars, s:newlineend, s:newline, s:nextline] = NewLineRange(".", a:dir)
+  let moves = 1
+
+  if a:dir == "up" || a:dir == "down"
+    if s:newindent < g:action.begins - 1
+      let moves += 1
+    endif
+
+    let rtn = repeat(key, moves)
+  
+  elseif a:dir == "left"
+    if thisindent < g:action.begins - 1
+      call cursor(s:newline, "$")
+      let rtn = ""
+    else
+      let rtn = key
+    endif
+
+  elseif a:dir == "right"
+    if col > g:action.ends - 1
+      call cursor(s:newline, g:action.begins)
+      let rtn = ""
+    else
+      let rtn = key
+    endif
+
+  endif
+
+  return rtn . ElementDetect()
 endfu
 
 
