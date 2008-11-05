@@ -1,8 +1,8 @@
 "
 " Pago
 " screenwriting for vim
-" Version:      0.2.7
-" Updated:      2008-11-04
+" Version:      0.2.8
+" Updated:      2008-11-05
 " Maintainer:   Mike Zazaian, mike@zop.io, http://zop.io
 " License:      This file is placed in the public domain.
 "
@@ -86,15 +86,15 @@ imap <TAB> <C-R>=TabPressed()<CR>
 imap <BS> <C-R>=BackspacePressed()<CR><C-R>=ElementDetect()<CR>
 imap  <C-R>=BackspacePressed()<CR><C-R>=ElementDetect()<CR>
 
-ino <Up> <C-R>=DirectionPressed("up")<CR>
-ino <Down> <C-R>=DirectionPressed("down")<CR>
-ino <Left> <C-R>=DirectionPressed("left")<CR>
-ino <Right> <C-R>=DirectionPressed("right")<CR>
+ino <Up> <C-R>=DirectionPressed("up")<CR><C-R>=ElementDetect()<CR>
+ino <Down> <C-R>=DirectionPressed("down")<CR><C-R>=ElementDetect()<CR>
+ino <Left> <C-R>=DirectionPressed("left")<CR><C-R>=ElementDetect()<CR>
+ino <Right> <C-R>=DirectionPressed("right")<CR><C-R>=ElementDetect()<CR>
 
-no <Up> <Insert><C-R>=DirectionPressed("up")<CR><Esc>
-no <Down> <Insert><C-R>=DirectionPressed("down")<CR><Esc>
-no <Left> <Insert><C-R>=DirectionPressed("left")<CR><Esc>
-no <Right> <Insert><C-R>=DirectionPressed("right")<CR><Esc>
+no <Up> a<C-R>=DirectionPressed("up")<CR><C-R>=ElementDetect()<CR><Esc>
+no <Down> a<C-R>=DirectionPressed("down")<CR><C-R>=ElementDetect()<CR><Esc>
+no <Left> a<C-R>=DirectionPressed("left")<CR><C-R>=ElementDetect()<CR><Esc>
+no <Right> a<C-R>=DirectionPressed("right")<CR><C-R>=ElementDetect()<CR><Esc>
 
 
 ino <Space> <Space><C-R>=SceneStart()<CR><Esc>
@@ -538,8 +538,19 @@ fu! DirectionPressed(dir)
 
   endif
 
-  return rtn . ElementDetect()
+  return rtn
 endfu
+
+fu! CursorAdjust()
+"Pressing UP should jump the cursor to the end of the line
+"Pressing DOWN should jump the cursor to the beginning of the line
+"Pressing LEFT should scroll the cursor to the beginning of the element, then jump
+"to the end of the line above it
+"Pressing RIGHT should scroll the cursor to the end of the element, then jump to the
+"beginning of the line below it
+
+endfu
+
 
 
 function! CtrlPPressed()
