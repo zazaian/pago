@@ -1,7 +1,7 @@
 "
 " Pago
 " screenwriting for vim
-" Version:      0.2.9
+" Version:      0.2.10
 " Updated:      2008-11-07
 " Maintainer:   Mike Zazaian, mike@zop.io, http://zop.io
 " License:      This file is placed in the public domain.
@@ -509,36 +509,37 @@ fu! DirectionPressed(dir)
   exe "let key = \"\\\<" . a:dir . ">\""
   exe "let thisbegins = g:" . g:current . ".begins"
   exe "let thisends = g:" . g:current . ".ends"
+  let lineend = LineEnd(".")
   let thisline = line(".")
   let thisindent = indent(".")
   let col = col(".")
   let [s:newlinestart, s:newindent, s:newchars, s:newlineend, s:newline, s:nextline] = NewLineRange(".", a:dir)
   let moves = 1
+  let g:linejump = "yes"
 
-  if a:dir == "up" || a:dir == "down"
-    if s:newindent < g:action.begins - 1
-      let moves += 1
-    endif
+  if s:newindent < g:action.begins - 1
+    let moves += 1
+  endif
 
-    let rtn = repeat(key, moves)
-  
-  elseif a:dir == "left"
-    if col == thisindent + 1
-      let rtn = "\<Up>" . CursorAdjust("up")
+  if a:dir == "left"
+    if col <= thisindent + 1
+      let key = "\<Up>"
     else
-      let rtn = key
+      let moves = 1
+      let g:linejump = "no"
     endif
 
   elseif a:dir == "right"
-    if col == thisends
-      let rtn = "\<Down>" . CursorAdjust("down")
+    if col >= lineend
+      let key = "\<Down>"
     else
-      let rtn = key
+      let moves = 1
+      let g:linejump = "no"
     endif
 
   endif
 
-  return rtn
+  return repeat(key, moves)
 endfu
 
 fu! CursorAdjust(dir)
@@ -547,47 +548,24 @@ fu! CursorAdjust(dir)
   exe "let thisbegins = g:" . g:current . ".begins"
   let s:rtn = ""
 
-  if a:dir == "up" 
-    if s:col < s:lineend
-      let s:rtn = repeat("\<Right>", s:lineend - s:col)
-    elseif s:col > s:lineend
-      let s:rtn = "\<Left>"
+  if g:linejump == "yes"
+    if a:dir == "up" || a:dir == "left"
+      if s:col < s:lineend
+        let s:rtn = repeat("\<Right>", s:lineend - s:col)
+      endif
+  
+    elseif a:dir == "down" || a:dir == "right"  
+      if s:col > thisbegins
+        let s:rtn = repeat("\<Left>", s:col - thisbegins)
+      else
+        let s:rtn = repeat("\<Right>", thisbegins - s:col)
+      endif
+  
     endif
-
-  elseif a:dir == "down"
-    if s:col > thisbegins
-      let s:rtn = repeat("\<Left>", s:col - thisbegins)
-    elseif s:col < thisbegins
-      let s:rtn = repeat("\<Right>", thisbegins - s:col)
-    endif
-
-"  elseif a:dir == "left"
-"    if s:col < s:lineend
-"      let s:rtn = repeat("\<Right>", s:lineend - s:col)
-"    elseif s:col > s:lineend
-" let s:rtn = repeat("\<Left>", s:col - s:lineend)
-"     endif
-
-"  elseif a:dir == "right"
-"    if s:col > thisbegins
-"      let s:rtn = repeat("\<Left>", s:col - thisbegins)
-"    elseif s:col < thisbegins
-"      let s:rtn = repeat("\<Right>", thisbegins - s:col)
-"    endif
-
   endif
 
   return s:rtn
-
-"Pressing UP should jump the cursor to the end of the line
-"Pressing DOWN should jump the cursor to the beginning of the line
-"Pressing LEFT should scroll the cursor to the beginning of the element, then jump
-"to the end of the line above it
-"Pressing RIGHT should scroll the cursor to the end of the element, then jump to the
-"beginning of the line below it
-
 endfu
-
 
 
 function! CtrlPPressed()
