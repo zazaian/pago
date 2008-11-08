@@ -1,8 +1,8 @@
 "
 " Pago
 " screenwriting for vim
-" Version:      0.2.8
-" Updated:      2008-11-05
+" Version:      0.2.9
+" Updated:      2008-11-07
 " Maintainer:   Mike Zazaian, mike@zop.io, http://zop.io
 " License:      This file is placed in the public domain.
 "
@@ -86,15 +86,15 @@ imap <TAB> <C-R>=TabPressed()<CR>
 imap <BS> <C-R>=BackspacePressed()<CR><C-R>=ElementDetect()<CR>
 imap  <C-R>=BackspacePressed()<CR><C-R>=ElementDetect()<CR>
 
-ino <Up> <C-R>=DirectionPressed("up")<CR><C-R>=ElementDetect()<CR>
-ino <Down> <C-R>=DirectionPressed("down")<CR><C-R>=ElementDetect()<CR>
-ino <Left> <C-R>=DirectionPressed("left")<CR><C-R>=ElementDetect()<CR>
-ino <Right> <C-R>=DirectionPressed("right")<CR><C-R>=ElementDetect()<CR>
+ino <Up> <C-R>=DirectionPressed("up")<CR><C-R>=ElementDetect()<CR><C-R>=CursorAdjust("up")<CR>
+ino <Down> <C-R>=DirectionPressed("down")<CR><C-R>=ElementDetect()<CR><C-R>=CursorAdjust("down")<CR>
+ino <Left> <C-R>=DirectionPressed("left")<CR><C-R>=ElementDetect()<CR><C-R>=CursorAdjust("left")<CR>
+ino <Right> <C-R>=DirectionPressed("right")<CR><C-R>=ElementDetect()<CR><C-R>=CursorAdjust("right")<CR>
 
-no <Up> a<C-R>=DirectionPressed("up")<CR><C-R>=ElementDetect()<CR><Esc>
-no <Down> a<C-R>=DirectionPressed("down")<CR><C-R>=ElementDetect()<CR><Esc>
-no <Left> a<C-R>=DirectionPressed("left")<CR><C-R>=ElementDetect()<CR><Esc>
-no <Right> a<C-R>=DirectionPressed("right")<CR><C-R>=ElementDetect()<CR><Esc>
+no <Up> a<C-R>=DirectionPressed("up")<CR><C-R>=ElementDetect()<CR><C-R>=CursorAdjust("up")<CR><Esc>
+no <Down> a<C-R>=DirectionPressed("down")<CR><C-R>=ElementDetect()<CR><C-R>=CursorAdjust("down")<CR><Esc>
+no <Left> a<C-R>=DirectionPressed("left")<CR><C-R>=ElementDetect()<CR><C-R>=CursorAdjust("left")<CR><Esc>
+no <Right> a<C-R>=DirectionPressed("right")<CR><C-R>=ElementDetect()<CR><C-R>=CursorAdjust("right")<CR><Esc>
 
 
 ino <Space> <Space><C-R>=SceneStart()<CR><Esc>
@@ -507,6 +507,8 @@ endfu
 
 fu! DirectionPressed(dir)
   exe "let key = \"\\\<" . a:dir . ">\""
+  exe "let thisbegins = g:" . g:current . ".begins"
+  exe "let thisends = g:" . g:current . ".ends"
   let thisline = line(".")
   let thisindent = indent(".")
   let col = col(".")
@@ -521,17 +523,15 @@ fu! DirectionPressed(dir)
     let rtn = repeat(key, moves)
   
   elseif a:dir == "left"
-    if thisindent < g:action.begins - 1
-      call cursor(s:newline, "$")
-      let rtn = ""
+    if col == thisindent + 1
+      let rtn = "\<Up>" . CursorAdjust("up")
     else
       let rtn = key
     endif
 
   elseif a:dir == "right"
-    if col > g:action.ends - 1
-      call cursor(s:newline, g:action.begins)
-      let rtn = ""
+    if col == thisends
+      let rtn = "\<Down>" . CursorAdjust("down")
     else
       let rtn = key
     endif
@@ -541,7 +541,44 @@ fu! DirectionPressed(dir)
   return rtn
 endfu
 
-fu! CursorAdjust()
+fu! CursorAdjust(dir)
+  let s:lineend = LineEnd(".")
+  let s:col = col(".")
+  exe "let thisbegins = g:" . g:current . ".begins"
+  let s:rtn = ""
+
+  if a:dir == "up" 
+    if s:col < s:lineend
+      let s:rtn = repeat("\<Right>", s:lineend - s:col)
+    elseif s:col > s:lineend
+      let s:rtn = "\<Left>"
+    endif
+
+  elseif a:dir == "down"
+    if s:col > thisbegins
+      let s:rtn = repeat("\<Left>", s:col - thisbegins)
+    elseif s:col < thisbegins
+      let s:rtn = repeat("\<Right>", thisbegins - s:col)
+    endif
+
+"  elseif a:dir == "left"
+"    if s:col < s:lineend
+"      let s:rtn = repeat("\<Right>", s:lineend - s:col)
+"    elseif s:col > s:lineend
+" let s:rtn = repeat("\<Left>", s:col - s:lineend)
+"     endif
+
+"  elseif a:dir == "right"
+"    if s:col > thisbegins
+"      let s:rtn = repeat("\<Left>", s:col - thisbegins)
+"    elseif s:col < thisbegins
+"      let s:rtn = repeat("\<Right>", thisbegins - s:col)
+"    endif
+
+  endif
+
+  return s:rtn
+
 "Pressing UP should jump the cursor to the end of the line
 "Pressing DOWN should jump the cursor to the beginning of the line
 "Pressing LEFT should scroll the cursor to the beginning of the element, then jump
