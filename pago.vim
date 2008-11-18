@@ -1,8 +1,8 @@
 "
 " Pago
 " screenwriting for vim
-" Version:      0.2.10
-" Updated:      2008-11-07
+" Version:      0.2.11
+" Updated:      2008-11-16
 " Maintainer:   Mike Zazaian, mike@zop.io, http://zop.io
 " License:      This file is placed in the public domain.
 "
@@ -140,6 +140,7 @@ for n in g:alphalower
 endfor
 let g:alphaall = g:alphalower + g:alphaupper
 let g:otherkeys = ['<Space>','!','.','-','?']
+let g:autoformat = "\<Esc>gw}a"
 
 " Definition of Accepted Screenplay Characters
 let g:screenchars = '[A-Za-z_0-9\?\!\.\-]'
@@ -153,7 +154,7 @@ fu! MapUppercase()
   endif
   
   for n in g:alphaall
-    exe "ino " . n . " " . g:premap . toupper(n)
+    exe "ino " . n . " " . g:premap . toupper(n) . g:autoformat
   endfor
 
   for key in g:otherkeys
@@ -167,7 +168,7 @@ fu! MapUppercase()
       let g:premap = ""
     endif
 
-    exe "ino " . key1 . " " . g:premap . key2
+    exe "ino " . key1 . " " . g:premap . key2 . g:autoformat
   endfor
 
   return ""
@@ -175,11 +176,11 @@ endfu
 
 fu! UnmapUppercase()
   for n in g:alphaall
-    exe "ino " . n . " " . n
+    exe "ino " . n . " " . n . g:autoformat
   endfor
 
   for n in g:otherkeys
-    exe "ino " . n . " " . n
+    exe "ino " . n . " " . n . g:autoformat
   endfor
 
   return ""
@@ -480,7 +481,12 @@ fu! BackspacePressed()
       let s:rtn = "\<Del>\<Del>" . repeat("\<BS>", s:col - g:dialogue.begins)
   
     elseif g:current == "dialogue"
-      let s:rtn = repeat("\<BS>", 10)
+      if s:newindent < g:dialogue.begins - 1
+        let s:rtn = repeat("\<BS>", 10)
+      else
+        let s:rtn = "\<BS>\<C-R>=DirectionPressed(\"left\")\<CR>\<C-R>=ElementDetect()\<CR>\<C-R>=CursorAdjust(\"left\")\<CR>"
+      endif
+
 
     elseif g:current == "action" || g:current == "scene"
       let backspaces = s:col
