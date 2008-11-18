@@ -1,74 +1,138 @@
 "
 " Pago
 " screenwriting for vim
-" Version:      0.2.11
-" Updated:      2008-11-16
+" Version:      0.2.13
+" Updated:      2008-11-17
 " Maintainer:   Mike Zazaian, mike@zop.io, http://zop.io
 " License:      This file is placed in the public domain.
 "
-" Pago allows the use of vim as a fully-functional piece of screenwritng
-" software, automatically formatting the following screenplay elements:
+" Pago is the most powerful commandline screenwriting script available for any
+" platform, and allows the use of vim as a fully-functional piece of screenwriting
+" software, automatically formatting screenplay elements to the following
+" specifications:
 " 
-" ELEMENT            characters ( beginning#, ending#, total#, align, caps )
-" SCENE HEADING      ( 11, 70, 60, L, yes )
-" ACTION             ( 11, 70, 60, L, no )
-" CHARACTER          ( 31, 70, 40, L, yes )
-" PARANTHETICAL      ( 26, 55, 30, L, no )
-" DIALOGUE           ( 21, 55, 35, L, no )
-" TRANSITION         ( 70, 11, 60, R, yes )
+" ELEMENT            ( beginning#, ending#, total#, align, caps )
 "
-" This plugin elaborates upon on the screenplay.vim plugin developed by Alex Lance,
+" SCENE HEADING      (     11        70       60      L    yes  )
+" ACTION             (     11        70       60      L     no  )
+" CHARACTER          (     31        70       40      L    yes  )
+" PARANTHETICAL      (     26        55       30      L     no  )
+" DIALOGUE           (     21        55       35      L     no  )
+" TRANSITION         (     70        11       60      R    yes  )
+"
+" This plugin was inspired by the screenplay.vim plugin developed by Alex Lance,
 " which supported ACTION lines, CHARACTER names, and DIALOGUE.
 "
-" The following elements are planned for integration, with the following key to
-" mark the level of completion:
-" 'p': PLANNED but not yet completed
-" 'd': in DEVELOPMENT
-" 't': developed but in the process of TESTING
-" 'i': fully developed, tested, and INTEGRATED
 "
-" p Automatic hilighting and capitalization of SCENE HEADING elements
-" d Handling of PARANTHETICAL elements
-" p Handling of TRANSITION elements
-" d Improved formatting
-" p Display type of input in status bar
-" p PRINT FORMATTING, including
-"   p Page numbers
-"   p (CONTINUED) comments
-"   p (Cont'd) elements when dialogue for a single characters spills onto another
-"   page
-" 
-" Known Bugs
-" RESOLVED 1: Backspace doesn't call new elements when jumping to a previous line. 
-" 2: Remove cursor() call in each ELEMENT function which sets the cursor to the end
-" of the line automatically
-" 3: URGENT need for a function that automatically wraps and formats text if the word
-" count goes over the "end" value for a given element
+"  Overview
+"  ========
+"
+"  * Supports all major formatting elements of a screenplay, based on both
+"    logical and commonly accepted conventions of the screenplay form.
+"
+"  * Automatically enforces all boundaries within each screenplay element, ensuring
+"    proper formatting to the exact specifications of a screenplay.
+"
+"  * Allows access to all six available screenplay ELEMENTS without any complex
+"    keyboard shortcuts or commands, using only the keys <Backspace>, <Tab>, <Enter>,
+"    <Up>, <Down>, <Left>, <Right>.
+"
+"  * Allows easy cycling through blank screenplay elements using both the <Tab> and
+"    <Backspace> keys.
 "
 "
-" Features
-" ========
+"  Features
+"  ========
 "
-"  * All text is just a tab away from being indented correctly.
-"    The tab button and the backspace button have been modified to go
-"    backwards and forwards in helpful chunks 
-"    Action  == 16 spaces == 1 tab
-"    Dialog  == 26 spaces == 2 tabs
-"    Speaker == 38 spamce == 3 tabs
+"  * Pressing TAB cycles through empty screenplay elements in the order:
+"    
+"    ACTION --> DIALOGUE --> PARENTHETICAL --> CHARACTER --> TRANSITION --> ACTION
 "
-" TODO: 
+"    * Pressing <Tab> from a blank TRANSITION element will cycle back to the
+"      beginning of the line, triggering a blank ACTION element.
+"    
+"    * Parentheses are automatically inserted when calling a blank PARENTHETICAL
+"      element.  Pressing <Tab> from within blank parentheses will automatically
+"      delete the parentheses and jump to a blank CHARACTER element.
+"
+"    * A colon (":") is automatically inserted at the end of the line when an
+"      TRANSITION element is called.  The cursor remains at the spot of the colon
+"      when text is either entered or deleted.
+"      
+"      * Text typed within a TRANSITION element is automatically RIGHT-JUSTIFIED.
+"
+"      * Pressing <Enter> from a TRANSITION element jumps two lines down the page
+"        and prompts a blank SCENE HEADING element.
+"
+"  * Pressing <Backspace> on an empty line cycles through empty screenplay elements
+"    in the reverse order:
+"
+"    TRANSITION --> CHARACTER --> PARENTHETICAL --> DIALOGUE --> ACTION
+"    --> END OF PREVIOUS ELEMENT
+"
+"    * Pressing <Backspace> from a blank line jumps to the end of the previous
+"      element or, if the above two lines are blank, will create a blank ACTION
+"      element two lines above the previous cursorline.
+"    
+"    * Pressing <Backspace> on a line with text will delete the character to the
+"      left of the cursor.
+"
+"  * All text typed with a SCENE HEADING, CHARACTER, or TRANSITION element will be
+"    automatically CAPITALIZED.
+"
+"  * To create a SCENE HEADING element, press enter while in a blank ACTION element.
+"    The Cursorline will be HIGHLIGHTED and all text typed within the element will
+"    be CAPITALIZED.
+"
+"  * While in a blank SCENE HEADING element:
+"    * Press the <Space> bar to cycle through the common prefixes INT., EXT., and
+"      INT./EXT.
+"    * Press <Enter> to jump down two lines to a new, blank ACTION element.
+"
+"  * Active screenplay element is displayed in CAPS in the status bar.
+"
+"  * Page number is displayed in the status bar.  This estimates the number of pages
+"    within your screeplay using a 56-line-per-page standard.
+"
+"  * Pressing <Up> in either INSERT or NORMAL modes jumps to the beginning of the
+"    line above the cursorline.
+"
+"  * Pressing <Down> in either INSERT or NORMAL modes jumps to the end of the
+"    line above the cursorline.
+"
+"  * Holding <Left> in either INSERT or NORMAL modes scrolls through to the
+"    beginning of the current element, then jumps to the end of the previous
+"    element.
+"
+"  * Holding <Right> in either INSERT or NORMAL modes scrolls through to the
+"    end of the current element, then jumps to the beginning of the next
+"    element.
+"
+"  * Typing text within a screenplay element such as DIALOGUE or ACTION will
+"    automatically reformat the paragraph if text exceeds the preset end of the
+"    line.  This improves upon use of the :tw (text width) and :wrap commands by
+"    formatting text that is typed within a paragraph, rather than simply at the end
+"    of it.
+"
+"
+"  TODO
+"  ====
 "  - provide indentation and textwidth settings for ACTOR DIRECTIONS (31
 "    spaces and then ACTOR DIRECTION in brackets)
 "  - make vim style help for this plugin
 "  - syntax highlighting
 "
-" HOW TO INSTALL
+"  INSTALLATION
+"  ============
 "
-"  * Drop this file in your ${VIMRUNTIME}/ftplugin/ directory
-"  * ensure your instance of vim has these options enabled:
+"  * Drop this file in your ${VIMRUNTIME}/ftplugin/ directory, which is likely
+"    located at 
+"
+"  * add the following lines to your ~/.vimrc file:
 "    :filetype on
 "    :filetype plugin on
 "    :au BufRead,BufNewFile *.pago    set filetype=pago
+"
 "  * Ensure the suffix the file you are editing is .pago and away you
 "    go!
 "
