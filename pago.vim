@@ -1,8 +1,8 @@
 "
 " Pago
 " screenwriting for vim
-" Version:      0.2.13
-" Updated:      2008-11-17
+" Version:      0.2.14
+" Updated:      2008-11-20
 " Maintainer:   Mike Zazaian, mike@zop.io, http://zop.io
 " License:      This file is placed in the public domain.
 "
@@ -126,7 +126,7 @@
 "  ============
 "
 "  * Drop this file in your ${VIMRUNTIME}/ftplugin/ directory, which is likely
-"    located at 
+"    located at ~/.vim/ftplugin/ 
 "
 "  * add the following lines to your ~/.vimrc file:
 "    :filetype on
@@ -529,10 +529,11 @@ fu! BackspacePressed()
   let s:indent = indent(".")
   let s:col = col(".")
   let [s:newlinestart, s:newindent, s:newchars, s:newlineend, s:newline, s:nextline] = NewLineRange(".", "up")
+  exe "let currentstart = g:" . g:current . ".begins"
 
   let s:rtn = "\<BS>"
 
-  if s:screenchars == 0
+  if s:screenchars == 0 || s:col <= currentstart + 1
     if g:current == "transition"
       let s:rtn = "\<Del>" . repeat("\<BS>", s:col - g:character.begins)
   
@@ -565,7 +566,7 @@ fu! BackspacePressed()
       else
         let s:trail = ""
       endif
-      let s:rtn = repeat("\<BS>", backspaces) . s:trail
+      let s:rtn = repeat("\<BS>", backspaces) . s:trail . g:autoformat
   
     endif
   elseif g:current == "transition"
