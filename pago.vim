@@ -1,8 +1,8 @@
 "
 " Pago
 " screenwriting for vim
-" Version:      0.2.14
-" Updated:      2008-11-20
+" Version:      0.2.15
+" Updated:      2008-11-21
 " Maintainer:   Mike Zazaian, mike@zop.io, http://zop.io
 " License:      This file is placed in the public domain.
 "
@@ -203,7 +203,7 @@ for n in g:alphalower
   exe "let g:alphaupper += ['" . N . "']"
 endfor
 let g:alphaall = g:alphalower + g:alphaupper
-let g:otherkeys = ['<Space>','!','.','-','?']
+let g:otherkeys = ['<Space>','!','.','-','?',';']
 let g:autoformat = "\<Esc>gw}a"
 
 " Definition of Accepted Screenplay Characters
@@ -228,6 +228,8 @@ fu! MapUppercase()
     if g:current == "scene" && key == "<Space>"
       let g:premap = "<C-R>=SceneStart()<CR>"
       let key2 = ""
+    elseif g:current == "transition"
+      let g:premap = "<C-R>=TransitionAdjust()<CR>"
     else
       let g:premap = ""
     endif
@@ -533,7 +535,7 @@ fu! BackspacePressed()
 
   let s:rtn = "\<BS>"
 
-  if s:screenchars == 0 || s:col <= currentstart + 1
+  if s:screenchars == 0 || ( s:col <= currentstart + 1 && g:current != "transition" )
     if g:current == "transition"
       let s:rtn = "\<Del>" . repeat("\<BS>", s:col - g:character.begins)
   
@@ -703,24 +705,30 @@ endfun
 set completefunc=CompleteCharacterName
 
 fu! Start()
-  if !exists("g:current")
+
+  let s:lastline = line("$")
+  if s:lastline == 1 && indent(".") == 0
     let g:current = "action"
     call Element(g:action)
-    return "i" . repeat(" ", 10)
+    let rtn = "i" . repeat("\<Space>", 10)
+  else
+    let rtn = ""
   endif
 
-  let s:lastline = line(".")
-  let s:emptylines = []
+  return rtn
 
-  for i in range(1, s:lastline)
-    if indent(i) == 0
-      let s:emptylines = s:emptylines + [i]
-    endif
-  endfor
+"  let s:lastline = line(".")
+"  let s:emptylines = []
 
-  for i in s:emptylines
-    call substitute(i, "^", "          ", "g")
-  endfor
+"  for i in range(1, s:lastline)
+"    if indent(i) == 0
+"      let s:emptylines = s:emptylines + [i]
+"    endif
+"  endfor
+
+"  for i in s:emptylines
+"    call substitute(i, "^", "          ", "g")
+"  endfor
 
 endfu
 
