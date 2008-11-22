@@ -1,8 +1,8 @@
 "
 " Pago
 " screenwriting for vim
-" Version:      0.2.15
-" Updated:      2008-11-21
+" Version:      0.2.16
+" Updated:      2008-11-22
 " Maintainer:   Mike Zazaian, mike@zop.io, http://zop.io
 " License:      This file is placed in the public domain.
 "
@@ -28,7 +28,12 @@
 "  ========
 "
 "  * Supports all major formatting elements of a screenplay, based on both
-"    logical and commonly accepted conventions of the screenplay form.
+"    logical and commonly accepted conventions of the screenplay form:
+"
+"          INT. WAREHOUSE - DAY
+"
+"          Sunlight peaks through crumbled roof tiles.  NELSON, 40, ruggedlooks up from a
+"          newspaper as a 
 "
 "  * Automatically enforces all boundaries within each screenplay element, ensuring
 "    proper formatting to the exact specifications of a screenplay.
@@ -701,21 +706,22 @@ function! CompleteCharacterName(findstart, base)
     endfor
     return res
   endif
-endfun
+endfunction
 set completefunc=CompleteCharacterName
 
 fu! Start()
+  let g:current = "action"
 
-  let s:lastline = line("$")
-  if s:lastline == 1 && indent(".") == 0
-    let g:current = "action"
-    call Element(g:action)
-    let rtn = "i" . repeat("\<Space>", 10)
+  if line("$") == 1 && indent(".") == 0
+    " call Element(g:action)
+    " let s:rtn = "i" . repeat(" ", 10)
+    let s:rtn = "I\<C-R>=BackspacePressed()\<CR>"
   else
-    let rtn = ""
+    let s:rtn = ""
   endif
 
-  return rtn
+  return s:rtn
+endfu
 
 "  let s:lastline = line(".")
 "  let s:emptylines = []
@@ -729,7 +735,5 @@ fu! Start()
 "  for i in s:emptylines
 "    call substitute(i, "^", "          ", "g")
 "  endfor
-
-endfu
 
 call Start()
