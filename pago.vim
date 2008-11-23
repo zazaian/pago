@@ -1,7 +1,7 @@
 "
 " Pago
 " screenwriting for vim
-" Version:      0.2.16
+" Version:      0.2.17
 " Updated:      2008-11-22
 " Maintainer:   Mike Zazaian, mike@zop.io, http://zop.io
 " License:      This file is placed in the public domain.
@@ -209,7 +209,25 @@ for n in g:alphalower
 endfor
 let g:alphaall = g:alphalower + g:alphaupper
 let g:otherkeys = ['<Space>','!','.','-','?',';']
-let g:autoformat = "\<Esc>gw}a"
+
+fu! Format()
+  let s:initline = line(".")
+  let s:topline = s:initline
+  let s:botline = s:initline
+  
+  while indent(s:topline) == indent(s:initline)
+    let s:topline -= 1
+  endwhile
+
+  while indent(s:botline) == indent(s:initline)
+    let s:botline += 1
+  endwhile
+
+  return s:topline . "," . s:botline . "!fmt"
+endfu
+
+let g:autoformat = "\<Esc>:call\<Space>Format()\<CR>a"
+" let g:autoformat = "\<Esc>gb}a"
 
 " Definition of Accepted Screenplay Characters
 let g:screenchars = '[A-Za-z_0-9\?\!\.\-]'
