@@ -1,8 +1,8 @@
 "
 " Pago
 " screenwriting for vim
-" Version:      0.2.17
-" Updated:      2008-11-22
+" Version:      0.2.18
+" Updated:      2008-11-23
 " Maintainer:   Mike Zazaian, mike@zop.io, http://zop.io
 " License:      This file is placed in the public domain.
 "
@@ -731,14 +731,9 @@ fu! Start()
   let g:current = "action"
 
   if line("$") == 1 && indent(".") == 0
-    " call Element(g:action)
-    " let s:rtn = "i" . repeat(" ", 10)
-    let s:rtn = "I\<C-R>=BackspacePressed()\<CR>"
-  else
-    let s:rtn = ""
+    call Element(g:action)
+    exe "normal :s/^/           /g\<CR>:\<BS>"
   endif
-
-  return s:rtn
 endfu
 
 "  let s:lastline = line(".")
