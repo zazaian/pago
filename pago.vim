@@ -1,8 +1,8 @@
 "
 " Pago
 " screenwriting for vim
-" Version:      0.2.18
-" Updated:      2008-11-23
+" Version:      0.2.19
+" Updated:      2008-11-24
 " Maintainer:   Mike Zazaian, mike@zop.io, http://zop.io
 " License:      This file is placed in the public domain.
 "
@@ -223,10 +223,21 @@ fu! Format()
     let s:botline += 1
   endwhile
 
+  " return s:topline . "," . s:botline . "!fmt"
   return s:topline . "," . s:botline . "!fmt"
 endfu
+  
+fu! FormatParens()  
+  if g:current == "parenthetical"
+    let s:rtn = "gw}"
+  else
+    let s:rtn = ""
+  endif
 
-let g:autoformat = "\<Esc>:call\<Space>Format()\<CR>a"
+  return s:rtn
+endfu
+
+let g:autoformat = "\<Esc>:call\<Space>Format()\<CR>:call FormatParens()\<CR>a"
 " let g:autoformat = "\<Esc>gb}a"
 
 " Definition of Accepted Screenplay Characters
@@ -732,7 +743,7 @@ fu! Start()
 
   if line("$") == 1 && indent(".") == 0
     call Element(g:action)
-    exe "normal :s/^/           /g\<CR>:\<BS>"
+   exe "normal :s/^/           /g\<CR>:\<BS>"
   endif
 endfu
 
