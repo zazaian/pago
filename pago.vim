@@ -1,7 +1,7 @@
 "
 " Pago
 " screenwriting for vim
-" Version:      0.2.21
+" Version:      0.2.22
 " Updated:      2008-11-24
 " Maintainer:   Mike Zazaian, mike@zop.io, http://zop.io
 " License:      This file is placed in the public domain.
@@ -187,6 +187,7 @@ map <C-P> i<C-R>=CtrlPPressed()<CR>
 
 set tw=70         " Set text width to 70
 set wrap          " Set columns to wrap at tw
+set ls=2          " Always show statusline
 set expandtab     " Change tabs into spaces
 set softtabstop=0 " softtabstop variable can break my custom backspacing
 set autoindent    " Set auto indent
