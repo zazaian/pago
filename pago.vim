@@ -1,7 +1,7 @@
 "
 " Pago
 " screenwriting for vim
-" Version:      0.2.19
+" Version:      0.2.20
 " Updated:      2008-11-24
 " Maintainer:   Mike Zazaian, mike@zop.io, http://zop.io
 " License:      This file is placed in the public domain.
@@ -159,20 +159,28 @@ ino <Up> <C-R>=DirectionPressed("up")<CR><C-R>=ElementDetect()<CR><C-R>=CursorAd
 ino <Down> <C-R>=DirectionPressed("down")<CR><C-R>=ElementDetect()<CR><C-R>=CursorAdjust("down")<CR>
 ino <Left> <C-R>=DirectionPressed("left")<CR><C-R>=ElementDetect()<CR><C-R>=CursorAdjust("left")<CR>
 ino <Right> <C-R>=DirectionPressed("right")<CR><C-R>=ElementDetect()<CR><C-R>=CursorAdjust("right")<CR>
+ino <PageDown> <PageDown><C-R>=DirectionPressed("up")<CR><C-R>=ElementDetect()<CR><C-R>=CursorAdjust("up")<CR>
+ino <PageUp> <PageUp><C-R>=DirectionPressed("down")<CR><C-R>=ElementDetect()<CR><C-R>=CursorAdjust("down")<CR>
 
 no <Up> a<C-R>=DirectionPressed("up")<CR><C-R>=ElementDetect()<CR><C-R>=CursorAdjust("up")<CR><Esc>
 no <Down> a<C-R>=DirectionPressed("down")<CR><C-R>=ElementDetect()<CR><C-R>=CursorAdjust("down")<CR><Esc>
 no <Left> a<C-R>=DirectionPressed("left")<CR><C-R>=ElementDetect()<CR><C-R>=CursorAdjust("left")<CR><Esc>
 no <Right> a<C-R>=DirectionPressed("right")<CR><C-R>=ElementDetect()<CR><C-R>=CursorAdjust("right")<CR><Esc>
-
+no <PageDown> a<PageDown><C-R>=DirectionPressed("up")<CR><C-R>=ElementDetect()<CR><C-R>=CursorAdjust("up")<CR><Esc>
+no <PageUp> a<PageUp><C-R>=DirectionPressed("down")<CR><C-R>=ElementDetect()<CR><C-R>=CursorAdjust("down")<CR><Esc>
 
 ino <Space> <Space><C-R>=SceneStart()<CR><Esc>
 no <Space> <Space><C-R>=SceneStart()<CR><Esc>
 
-
 " Reformat paragraph with Ctrl-P in insert and normal mode
 imap <C-P> <C-R>=CtrlPPressed()<CR>
 map <C-P> i<C-R>=CtrlPPressed()<CR>
+
+" User-Defined Commands
+" :command -nargs=0 W "mz:w"
+" :command -nargs=0 WQ "mz:wq"
+" :command -nargs=0 WQQ "mz:wq!"
+
 
 " map ctrl-d to clean up all the whitespace so that ctrl-p work correctly
 "imap <C-D> !A!<Esc>:%s/^[ ]\{1,}$//g<CR>?!A!<CR>df!i
