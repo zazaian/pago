@@ -1,7 +1,7 @@
 "
 " Pago
 " screenwriting for vim
-" Version:      0.2.20
+" Version:      0.2.21
 " Updated:      2008-11-24
 " Maintainer:   Mike Zazaian, mike@zop.io, http://zop.io
 " License:      This file is placed in the public domain.
@@ -236,7 +236,7 @@ fu! Format()
 endfu
   
 fu! FormatParens()  
-  if g:current == "parenthetical"
+  if g:current != "parenthetical"
     let s:rtn = "gw}"
   else
     let s:rtn = ""
