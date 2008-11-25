@@ -1,8 +1,8 @@
 "
 " Pago
 " screenwriting for vim
-" Version:      0.2.22
-" Updated:      2008-11-24
+" Version:      0.2.23
+" Updated:      2008-11-25
 " Maintainer:   Mike Zazaian, mike@zop.io, http://zop.io
 " License:      This file is placed in the public domain.
 "
@@ -221,6 +221,7 @@ let g:otherkeys = ['<Space>','!','.','-','?',';']
 
 fu! Format()
   let s:initline = line(".")
+  let s:newcol = col(".")
   let s:topline = s:initline
   let s:botline = s:initline
   
@@ -232,11 +233,15 @@ fu! Format()
     let s:botline += 1
   endwhile
 
+  let s:topline +=1
+  let s:botline -=1
+
   " return s:topline . "," . s:botline . "!fmt"
-  return s:topline . "," . s:botline . "!fmt"
+  exe "let thisends = g:" . g:current . ".ends"
+  return "\<Esc>:" . s:topline . "," . s:botline . "!fmt -" . thisends . "\<CR>:call cursor(" . s:initline . "," . s:newcol . ")\<CR>i"
 endfu
-  
-fu! FormatParens()  
+
+fu! FormatParens()
   if g:current != "parenthetical"
     let s:rtn = "gw}"
   else
@@ -246,8 +251,8 @@ fu! FormatParens()
   return s:rtn
 endfu
 
-let g:autoformat = "\<Esc>:call\<Space>Format()\<CR>:call FormatParens()\<CR>a"
-" let g:autoformat = "\<Esc>gb}a"
+  let g:autoformat = "<C-R>=Format()<CR>"
+" let g:autoformat = "\<Esc>gw}a"
 
 " Definition of Accepted Screenplay Characters
 let g:screenchars = '[A-Za-z_0-9\?\!\.\-]'
