@@ -1,7 +1,7 @@
 "
 " Pago
 " screenwriting for vim
-" Version:      0.2.24
+" Version:      0.2.25
 " Updated:      2008-11-25
 " Maintainer:   Mike Zazaian, mike@zop.io, http://zop.io
 " License:      This file is placed in the public domain.
@@ -152,7 +152,7 @@ let g:counter = []
 " Three listeners: Enter, Tab and Backspace
 imap <CR> <C-R>=EnterPressed()<CR>
 imap <TAB> <C-R>=TabPressed()<CR>
-imap <BS> <C-R>=BackspacePressed()<CR><C-R>=Format()<CR><C-R>=ElementDetect()<CR>
+imap <BS> <C-R>=BackspacePressed()<CR><C-R>=ElementDetect()<CR>
 imap  <C-R>=BackspacePressed()<CR><C-R>=ElementDetect()<CR>
 
 ino <Up> <C-R>=DirectionPressed("up")<CR><C-R>=ElementDetect()<CR><C-R>=CursorAdjust("up")<CR>
@@ -221,7 +221,7 @@ let g:otherkeys = ['<Space>','!','.','-','?',';']
 
 fu! Format()
   let s:initline = line(".")
-  let s:newcol = col(".")
+  let s:initcol = col(".")
   let s:topline = s:initline
   let s:botline = s:initline
   
@@ -238,7 +238,16 @@ fu! Format()
 
   " return s:topline . "," . s:botline . "!fmt"
   exe "let thisends = g:" . g:current . ".ends"
-  return "\<Esc>:" . s:topline . "," . s:botline . "!fmt -" . thisends . "\<CR>:call cursor(" . s:initline . "," . s:newcol . ")\<CR>i"
+  exe "let thisbegins = g:" . g:current . ".begins"
+  if col(".") >= thisends
+    let s:newcol = thisbegins
+    let s:newline = s:initline + 1
+  else
+    let s:newline = s:initline
+    let s:newcol = s:initcol
+  endif
+
+  return "\<Esc>:" . s:topline . "," . s:botline . "!fmt -" . thisends . "\<CR>:call cursor(" . s:newline . "," . s:newcol . ")\<CR>i"
 endfu
 
 fu! FormatParens()
@@ -251,8 +260,8 @@ fu! FormatParens()
   return s:rtn
 endfu
 
-  let g:autoformat = "<C-R>=Format()<CR>"
-" let g:autoformat = "\<Esc>gw}a"
+" let g:autoformat = "<C-R>=Format()<CR>"
+  let g:autoformat = "\<Esc>gw}a"
 
 " Definition of Accepted Screenplay Characters
 let g:screenchars = '[A-Za-z_0-9\?\!\.\-]'
@@ -616,13 +625,19 @@ fu! BackspacePressed()
       else
         let s:trail = ""
       endif
-      let s:rtn = repeat("\<BS>", backspaces) . s:trail . g:autoformat
+      let s:rtn = repeat("\<BS>", backspaces) . s:trail . "\<Esc>gw}a"
   
     endif
   elseif g:current == "transition"
     let s:rtn = "\<BS>\<Esc>:s/^/ /\<CR>:let @/ =\"\"\<CR>A\<Left>"
   endif
 
+"  if g:current == "action" || g:current == "scene"
+"    let format = "call Format()"
+"  else
+"    let format = ""
+"  endif
+  
   return s:rtn
 endfu
 
