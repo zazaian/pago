@@ -1,7 +1,7 @@
 "
 " Pago
 " screenwriting for vim
-" Version:      0.2.23
+" Version:      0.2.24
 " Updated:      2008-11-25
 " Maintainer:   Mike Zazaian, mike@zop.io, http://zop.io
 " License:      This file is placed in the public domain.
@@ -152,7 +152,7 @@ let g:counter = []
 " Three listeners: Enter, Tab and Backspace
 imap <CR> <C-R>=EnterPressed()<CR>
 imap <TAB> <C-R>=TabPressed()<CR>
-imap <BS> <C-R>=BackspacePressed()<CR><C-R>=ElementDetect()<CR>
+imap <BS> <C-R>=BackspacePressed()<CR><C-R>=Format()<CR><C-R>=ElementDetect()<CR>
 imap  <C-R>=BackspacePressed()<CR><C-R>=ElementDetect()<CR>
 
 ino <Up> <C-R>=DirectionPressed("up")<CR><C-R>=ElementDetect()<CR><C-R>=CursorAdjust("up")<CR>
