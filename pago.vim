@@ -185,14 +185,15 @@ map <C-P> i<C-R>=CtrlPPressed()<CR>
 " map ctrl-d to clean up all the whitespace so that ctrl-p work correctly
 "imap <C-D> !A!<Esc>:%s/^[ ]\{1,}$//g<CR>?!A!<CR>df!i
 
-set tw=70         " Set text width to 70
-set wrap          " Set columns to wrap at tw
-set ls=2          " Always show statusline
-set expandtab     " Change tabs into spaces
-set softtabstop=0 " softtabstop variable can break my custom backspacing
-set autoindent    " Set auto indent
-set noshowmatch   " Turn off display of matching parenthesis if already on
-set ff=unix       " use unix fileformat
+setlocal tw=70         " Set text width to 70
+setlocal wrap          " Set columns to wrap at tw
+setlocal fo+=w
+setlocal ls=2          " Always show statusline
+setlocal expandtab     " Change tabs into spaces
+setlocal softtabstop=0 " softtabstop variable can break my custom backspacing
+setlocal autoindent    " Set auto indent
+setlocal noshowmatch   " Turn off display of matching parenthesis if already on
+setlocal ff=unix       " use unix fileformat
 
 fu! TransitionAdjust()
   if g:current == "transition"
@@ -239,6 +240,7 @@ fu! Format()
   " return s:topline . "," . s:botline . "!fmt"
   exe "let thisends = g:" . g:current . ".ends"
   exe "let thisbegins = g:" . g:current . ".begins"
+  
   if col(".") >= thisends
     let s:newcol = thisbegins
     let s:newline = s:initline + 1
@@ -247,7 +249,24 @@ fu! Format()
     let s:newcol = s:initcol
   endif
 
-  return "\<Esc>:" . s:topline . "," . s:botline . "!fmt -" . thisends . "\<CR>:call cursor(" . s:newline . "," . s:newcol . ")\<CR>i"
+  " let v:lnum = s:topline
+  " let v:count = s:botline - s:topline + 1
+  let s:lines = s:botline - s:topline
+  let s:remaining = s:topline - s:initline
+  let s:remaining += (2*s:remaining)
+  if s:lines > 0
+    exe "let s:linecmd = " . s:remaining . "j"
+  else
+    let s:linecmd = ""
+  endif
+  let s:rtn = "\<Esc>gw" . s:linecmd . "\<Esc>a"
+  
+  " let s:rtn = "\<Esc>:" . s:topline . "," . s:botline . "!fmt -" . thisends . "\<CR>:call cursor(" . s:newline . "," . s:newcol . ")\<CR>i"
+  return s:rtn
+  " return "\<Esc>gw}a"
+  
+  " return "\<Esc>:" . s:topline . "," . s:botline . "AlignLeft\<CR>i"
+  " return "\<Esc>\<Leader>ala" 
 endfu
 
 fu! FormatParens()
@@ -260,8 +279,8 @@ fu! FormatParens()
   return s:rtn
 endfu
 
-" let g:autoformat = "<C-R>=Format()<CR>"
-  let g:autoformat = "\<Esc>gw}a"
+  let g:autoformat = "<C-R>=Format()<CR>"
+  " let g:autoformat = "\<Esc>gw\<Esc>a"
 
 " Definition of Accepted Screenplay Characters
 let g:screenchars = '[A-Za-z_0-9\?\!\.\-]'
