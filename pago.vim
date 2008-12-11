@@ -1,8 +1,8 @@
 "
 " Pago
 " screenwriting for vim
-" Version:      0.2.25
-" Updated:      2008-11-25
+" Version:      0.2.27
+" Updated:      2008-12-11
 " Maintainer:   Mike Zazaian, mike@zop.io, http://zop.io
 " License:      This file is placed in the public domain.
 "
@@ -194,6 +194,8 @@ setlocal softtabstop=0 " softtabstop variable can break my custom backspacing
 setlocal autoindent    " Set auto indent
 setlocal noshowmatch   " Turn off display of matching parenthesis if already on
 setlocal ff=unix       " use unix fileformat
+set ai                 " set autoindenting
+set si                 " set smartindenting
 
 fu! TransitionAdjust()
   if g:current == "transition"
@@ -254,19 +256,25 @@ fu! Format()
   let s:lines = s:botline - s:topline
   let s:remaining = s:topline - s:initline
   let s:remaining += (2*s:remaining)
-  if s:lines > 0
-    exe "let s:linecmd = " . s:remaining . "j"
-  else
-    let s:linecmd = ""
-  endif
-  let s:rtn = "\<Esc>gw" . s:linecmd . "\<Esc>a"
+  "if s:lines > 0
+   " exe "let s:linecmd = " . s:remaining . "j"
+  "else
+    
+    "let s:linecmd = ""
+  "endif
   
-  " let s:rtn = "\<Esc>:" . s:topline . "," . s:botline . "!fmt -" . thisends . "\<CR>:call cursor(" . s:newline . "," . s:newcol . ")\<CR>i"
-  return s:rtn
+  " let s:rtn = ""
+  " let s:rtn = "\<Esc>gw" . s:linecmd . "\<Esc>a"
+  " let s:rtn = "\<Esc>:" . s:topline . "," . s:botline . "left" . thisbegins . "\<CR>i"
+  
+  " let s:rtn = "\<Esc>:" . s:topline . "," . s:botline . "!fmt -" . thisends . "\<CR>:call cursor(" . s:newline . "," . s:newcol . ")\<CR>a"
   " return "\<Esc>gw}a"
+  let s:rtn = "\<Esc>:" . s:topline . "\<CR>v" . s:lines . "jgq:call cursor(" . s:newline . "," . s:newcol . ")\<CR>i"
+  " let s:rtn = "\<Esc>:" . s:topline . "," . s:botline . "AlignJustify " . thisends . "\<CR>" 
   
   " return "\<Esc>:" . s:topline . "," . s:botline . "AlignLeft\<CR>i"
-  " return "\<Esc>\<Leader>ala" 
+  " return "\<Esc>\<Leader>ala"
+  return s:rtn
 endfu
 
 fu! FormatParens()
