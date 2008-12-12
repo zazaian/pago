@@ -1,8 +1,8 @@
 "
 " Pago
 " screenwriting for vim
-" Version:      0.2.27
-" Updated:      2008-12-11
+" Version:      0.2.28
+" Updated:      2008-12-12
 " Maintainer:   Mike Zazaian, mike@zop.io, http://zop.io
 " License:      This file is placed in the public domain.
 "
@@ -222,6 +222,38 @@ endfor
 let g:alphaall = g:alphalower + g:alphaupper
 let g:otherkeys = ['<Space>','!','.','-','?',';']
 
+
+fu! ResetCursor(initline, initcol)
+  
+  exe "let thisends = g:" . g:current . ".ends"
+  exe "let thisbegins = g:" . g:current . ".begins"
+
+  call cursor(a:initline, a:initcol)
+
+  let s:endspace = search(" $","bnc") 
+  
+  if a:initcol >= thisends
+    if s:endspace == a:initline 
+      let s:newcol = thisbegins
+      let s:newline = a:initline + 1
+      let s:trail = "\<Space>\<Left>"
+    else
+      call cursor(a:initline, col("$"))
+      let s:lastspace = search(" ","bc",line("."))
+      let s:trail = "\<Del>\<CR>\<Right>"
+      let s:newline = line(".")
+      let s:col = col(".")
+    endif
+  else
+    let s:newline = a:initline
+    let s:newcol = a:initcol
+    let s:trail = ""
+  endif
+  
+  let s:rtn = ":call cursor(" . s:newline . "," . s:newcol . ")\<CR>" . s:trail
+endfu
+
+
 fu! Format()
   let s:initline = line(".")
   let s:initcol = col(".")
@@ -239,56 +271,13 @@ fu! Format()
   let s:topline +=1
   let s:botline -=1
 
-  " return s:topline . "," . s:botline . "!fmt"
-  exe "let thisends = g:" . g:current . ".ends"
-  exe "let thisbegins = g:" . g:current . ".begins"
-  
-  if col(".") >= thisends
-    let s:newcol = thisbegins
-    let s:newline = s:initline + 1
-  else
-    let s:newline = s:initline
-    let s:newcol = s:initcol
-  endif
-
-  " let v:lnum = s:topline
-  " let v:count = s:botline - s:topline + 1
   let s:lines = s:botline - s:topline
-  let s:remaining = s:topline - s:initline
-  let s:remaining += (2*s:remaining)
-  "if s:lines > 0
-   " exe "let s:linecmd = " . s:remaining . "j"
-  "else
-    
-    "let s:linecmd = ""
-  "endif
-  
-  " let s:rtn = ""
-  " let s:rtn = "\<Esc>gw" . s:linecmd . "\<Esc>a"
-  " let s:rtn = "\<Esc>:" . s:topline . "," . s:botline . "left" . thisbegins . "\<CR>i"
-  
-  " let s:rtn = "\<Esc>:" . s:topline . "," . s:botline . "!fmt -" . thisends . "\<CR>:call cursor(" . s:newline . "," . s:newcol . ")\<CR>a"
-  " return "\<Esc>gw}a"
-  let s:rtn = "\<Esc>:" . s:topline . "\<CR>v" . s:lines . "jgq:call cursor(" . s:newline . "," . s:newcol . ")\<CR>i"
-  " let s:rtn = "\<Esc>:" . s:topline . "," . s:botline . "AlignJustify " . thisends . "\<CR>" 
-  
-  " return "\<Esc>:" . s:topline . "," . s:botline . "AlignLeft\<CR>i"
-  " return "\<Esc>\<Leader>ala"
-  return s:rtn
-endfu
 
-fu! FormatParens()
-  if g:current != "parenthetical"
-    let s:rtn = "gw}"
-  else
-    let s:rtn = ""
-  endif
-
+  let s:rtn = "\<Esc>:" . s:topline . "\<CR>v" . s:lines . "jgq:call ResetCursor(" . s:initline . "," . s:initcol . ")\<CR>i"
   return s:rtn
 endfu
 
   let g:autoformat = "<C-R>=Format()<CR>"
-  " let g:autoformat = "\<Esc>gw\<Esc>a"
 
 " Definition of Accepted Screenplay Characters
 let g:screenchars = '[A-Za-z_0-9\?\!\.\-]'
