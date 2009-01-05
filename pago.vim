@@ -1,8 +1,8 @@
 "
 " Pago
 " screenwriting for vim
-" Version:      0.2.28
-" Updated:      2008-12-12
+" Version:      0.2.29
+" Updated:      2009-1-5
 " Maintainer:   Mike Zazaian, mike@zop.io, http://zop.io
 " License:      This file is placed in the public domain.
 "
@@ -242,7 +242,7 @@ fu! ResetCursor(initline, initcol)
       let s:lastspace = search(" ","bc",line("."))
       let s:trail = "\<Del>\<CR>\<Right>"
       let s:newline = line(".")
-      let s:col = col(".")
+      let s:newcol = col(".")
     endif
   else
     let s:newline = a:initline
@@ -271,9 +271,10 @@ fu! Format()
   let s:topline +=1
   let s:botline -=1
 
-  let s:lines = s:botline - s:topline
+  let s:lines = s:botline - s:topline - 1
 
-  let s:rtn = "\<Esc>:" . s:topline . "\<CR>v" . s:lines . "jgq:call ResetCursor(" . s:initline . "," . s:initcol . ")\<CR>i"
+  let s:rtn = "\<Esc>:" . s:topline . "\<CR>v" . s:lines . "jgq:call ResetCursor(" . s:initline . "," . s:initcol . ")\<CR>a"
+  " let s:rtn = "\<Esc>gw}a"
   return s:rtn
 endfu
 
@@ -495,7 +496,7 @@ fu! Element(element)
   call ToggleCase(a:element.case)
 
   " Page Number
-  let pageInt = (line(".") / 56) + 1
+  let pageInt = (line(".") / 52) + 1
   let g:page = "PAGE " . pageInt
   
   let g:statustxt = toupper(g:current)
