@@ -187,7 +187,8 @@ map <C-P> i<C-R>=CtrlPPressed()<CR>
 
 setlocal tw=70         " Set text width to 70
 setlocal wrap          " Set columns to wrap at tw
-setlocal fo+=w
+"setlocal fo+=w
+setlocal fo+=an2tw
 setlocal ls=2          " Always show statusline
 setlocal expandtab     " Change tabs into spaces
 setlocal softtabstop=0 " softtabstop variable can break my custom backspacing
@@ -240,9 +241,9 @@ fu! ResetCursor(initline, initcol)
     else
       call cursor(a:initline, col("$"))
       let s:lastspace = search(" ","bc",line("."))
-      let s:trail = "\<Del>\<CR>\<Right>"
-      let s:newline = line(".")
-      let s:newcol = col(".")
+      let s:trail = "\<Del>\<CR>\<Space>"
+      let s:newline = line(".") + 1
+      let s:newcol = LineEnd(s:newline)
     endif
   else
     let s:newline = a:initline
@@ -271,9 +272,17 @@ fu! Format()
   let s:topline +=1
   let s:botline -=1
 
-  let s:lines = s:botline - s:topline - 1
+  let s:lines = s:botline - s:topline
 
-  let s:rtn = "\<Esc>:" . s:topline . "\<CR>v" . s:lines . "jgq:call ResetCursor(" . s:initline . "," . s:initcol . ")\<CR>a"
+  exe "let currentstart = g:" . g:current . ".begins"
+  exe "let g:currentend = g:" . g:current . ".ends"
+  if s:initcol == currentstart
+    let s:insertlet = "a"
+  else
+    let s:insertlet = "a"
+  endif
+
+  let s:rtn = "\<Esc>:" . s:topline . "," . s:botline . "!fmt -" . g:currentend . "\<CR>:call ResetCursor(" . s:initline . "," . s:initcol . ")\<CR>a"
   " let s:rtn = "\<Esc>gw}a"
   return s:rtn
 endfu
