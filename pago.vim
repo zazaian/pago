@@ -539,19 +539,14 @@ fu! EnterPressed()
 
   elseif g:current == "parenthetical"
     call cursor(line("."), s:lineend)
-    if g:parensfromdialogue != 1
+    let s:emptyparens = search("()", "bnc", line("."))
+
+    if g:parensfromdialogue == 1 && s:emptyparens != 0
+      call Element(g:character)      
+      let s:rtn = repeat("\<BS>", s:col)."\<CR>\<Esc>I".repeat(' ', g:character.begins - 1)
+    else
       call Element(g:dialogue)
       let s:rtn = "\<CR>\<Esc>I".repeat(' ', g:dialogue.begins - 1)
-    else
-      call Element(g:character)
-      let s:emptyparens = searchpos("\(\)", "nc", line("."))
-      if s:emptyparens == 0
-        let s:backspaces = repeat("\<BS>", s:col)
-      else
-        let s:backspaces = ""
-      endif
-      
-      let s:rtn = s:spaces."\<CR>\<CR>\<Esc>I".repeat(' ', g:character.begins - 1)
     endif
     g:parensfromdialogue = 0
 
