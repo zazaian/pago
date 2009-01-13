@@ -1,8 +1,8 @@
 "
 " Pago
 " screenwriting for vim
-" Version:      0.2.29
-" Updated:      2009-1-5
+" Version:      0.2.30
+" Updated:      2009-1-13
 " Maintainer:   Mike Zazaian, mike@zop.io, http://zop.io
 " License:      This file is placed in the public domain.
 "
@@ -183,12 +183,11 @@ map <C-P> i<C-R>=CtrlPPressed()<CR>
 
 
 " map ctrl-d to clean up all the whitespace so that ctrl-p work correctly
-"imap <C-D> !A!<Esc>:%s/^[ ]\{1,}$//g<CR>?!A!<CR>df!i
+"imap <C-D> !A!<Esc>:%s/^[ ]\{1,}$//g<CR>?!A!<CR>df!
 
 setlocal tw=70         " Set text width to 70
 setlocal wrap          " Set columns to wrap at tw
-"setlocal fo+=w
-setlocal fo+=an2tw
+setlocal fo+=w
 setlocal ls=2          " Always show statusline
 setlocal expandtab     " Change tabs into spaces
 setlocal softtabstop=0 " softtabstop variable can break my custom backspacing
@@ -229,6 +228,7 @@ fu! ResetCursor(initline, initcol)
   exe "let thisends = g:" . g:current . ".ends"
   exe "let thisbegins = g:" . g:current . ".begins"
 
+  let s:newcol = a:initcol + 1
   call cursor(a:initline, a:initcol)
 
   let s:endspace = search(" $","bnc") 
@@ -241,13 +241,12 @@ fu! ResetCursor(initline, initcol)
     else
       call cursor(a:initline, col("$"))
       let s:lastspace = search(" ","bc",line("."))
-      let s:trail = "\<Del>\<CR>\<Space>"
-      let s:newline = line(".") + 1
-      let s:newcol = LineEnd(s:newline)
+      let s:trail = "\<Del>\<CR>\<Right>"
+      let s:newline = line(".")
+      let s:newcol = col(".")
     endif
   else
     let s:newline = a:initline
-    let s:newcol = a:initcol
     let s:trail = ""
   endif
   
@@ -273,24 +272,17 @@ fu! Format()
   let s:botline -=1
 
   let s:lines = s:botline - s:topline
+  exe "let currentend = g:" . g:current . ".ends"
 
-  exe "let currentstart = g:" . g:current . ".begins"
-  exe "let g:currentend = g:" . g:current . ".ends"
-  if s:initcol == currentstart
-    let s:insertlet = "a"
-  else
-    let s:insertlet = "a"
-  endif
-
-  let s:rtn = "\<Esc>:" . s:topline . "," . s:botline . "!fmt -" . g:currentend . "\<CR>:call ResetCursor(" . s:initline . "," . s:initcol . ")\<CR>a"
-  " let s:rtn = "\<Esc>gw}a"
+  " let s:rtn = "\<Esc>:" . s:topline . "\<CR>v" . s:lines . "jgw:call ResetCursor(" . s:initline . "," . s:initcol . ")\<CR>i"
+  let s:rtn = "\<Esc>gw}a"
   return s:rtn
 endfu
 
   let g:autoformat = "<C-R>=Format()<CR>"
 
 " Definition of Accepted Screenplay Characters
-let g:screenchars = '[A-Za-z_0-9\?\!\.\-]'
+let g:screenchars = '[A-Za-z_0-9\?\!\.\-\(\)]'
 let g:emptyline = "[^ ].*"
 
 fu! MapUppercase()  
@@ -541,13 +533,20 @@ fu! EnterPressed()
     endif
 
   elseif g:current == "dialogue"
-    call Element(g:character)
-    let s:rtn = "\<CR>\<CR>\<Esc>I".repeat(' ', g:character.begins - 1)
+    call Element(g:parenthetical)
+    let s:rtn = "\<CR>\<Esc>I".repeat(' ', g:parenthetical.begins - 1)."\(\)\<left>"
+    let g:parensfromdialogue = 1
 
   elseif g:current == "parenthetical"
-    call Element(g:dialogue) 
     call cursor(line("."), s:lineend)
-    let s:rtn = "\<CR>\<Esc>I".repeat(' ', g:dialogue.begins - 1)
+    if g:parensfromdialogue != 1
+      call Element(g:dialogue)
+      let s:rtn = "\<CR>\<Esc>I".repeat(' ', g:dialogue.begins - 1)
+    else
+      call Element(g:character)
+      let s:rtn = repeat("\<BS>", s:col)."\<CR>\<CR>\<Esc>I".repeat(' ', g:character.begins - 1)
+    endif
+    g:parensfromdialogue = 0
 
   elseif g:current == "character"
     if s:linestart < 1
@@ -637,7 +636,6 @@ fu! BackspacePressed()
         let s:rtn = "\<BS>\<C-R>=DirectionPressed(\"left\")\<CR>\<C-R>=ElementDetect()\<CR>\<C-R>=CursorAdjust(\"left\")\<CR>"
       endif
 
-
     elseif g:current == "action" || g:current == "scene"
       let backspaces = s:col
       let s:nextindent = indent(s:nextline)
@@ -657,13 +655,7 @@ fu! BackspacePressed()
   elseif g:current == "transition"
     let s:rtn = "\<BS>\<Esc>:s/^/ /\<CR>:let @/ =\"\"\<CR>A\<Left>"
   endif
-
-"  if g:current == "action" || g:current == "scene"
-"    let format = "call Format()"
-"  else
-"    let format = ""
-"  endif
-  
+ 
   return s:rtn
 endfu
 
