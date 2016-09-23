@@ -1,7 +1,7 @@
 "
 " Pago
 " screenwriting for vim
-" Version:      0.2.30
+" Version:      0.2.31
 " Updated:      2009-1-13
 " Maintainer:   Mike Zazaian, mike@zop.io, http://zop.io
 " License:      This file is placed in the public domain.
@@ -38,6 +38,7 @@
 "  * Automatically enforces all boundaries within each screenplay element, ensuring
 "    proper formatting to the exact specifications of a screenplay.
 "
+:q
 "  * Allows access to all six available screenplay ELEMENTS without any complex
 "    keyboard shortcuts or commands, using only the keys <Backspace>, <Tab>, <Enter>,
 "    <Up>, <Down>, <Left>, <Right>.
@@ -366,7 +367,7 @@ fu! CursorPos(line_num)
 endfu
 
 fu! LowerChars(line_num)
-  let s:lowerchars = search("[a-z]", "nc", line(a:line_num))
+  let s:lowerchars = search("[a-z]", "bnc", line(a:line_num))
   return s:lowerchars
 endfu
 
